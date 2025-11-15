@@ -8,7 +8,7 @@ import time
 from dataclasses import asdict
 from typing import Dict, Optional, Tuple
 
-from models import RenderState
+from .models import RenderState
 
 
 class StatePersistence:
