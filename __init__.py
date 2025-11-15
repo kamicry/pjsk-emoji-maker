@@ -1,14 +1,15 @@
 """
-AstrBot Hello World Plugin
+AstrBot PJSk Emoji Maker Plugin
 
-A simple example plugin demonstrating basic AstrBot functionality.
+A plugin for creating Project SEKAI character emoji cards with customizable text and styling.
 """
 
-__version__ = "1.0.0"
-__author__ = "AstrBot Community"
-__all__ = ["MyPlugin"]
+__version__ = "2.0.0"
+__author__ = "PJSk Community"
+__all__ = ["PjskEmojiMaker"]
 
 try:
-    from main import MyPlugin
+    from main import PjskEmojiMaker
+    __all__ = ["PjskEmojiMaker"]
 except ImportError:
     pass
