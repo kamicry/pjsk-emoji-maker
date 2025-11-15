@@ -85,8 +85,24 @@ If the automated script doesn't work, follow these steps:
 The renderer requires assets in `pjsk_emoji/assets/`:
 - `characters.json`: Character database and metadata
 - `emoji_images/`: Character portrait images
+- `img/`: PJSK character images (imported from Koishi plugin)
 - `fonts/`: Font files for text rendering
 - `templates/`: HTML templates for rendering
+
+#### Character Images
+
+The plugin includes character images imported from the [koishi-plugin-pjsk-pptr](https://github.com/kamicry/koishi-plugin-pjsk-pptr) repository. These images are organized by character:
+
+- **Miku** (初音未来): Multiple card variations
+- **Ichika** (星乃一歌): Multiple card variations
+- **Saki** (天马咲希): Multiple card variations
+- **Honami** (望月穗波): Multiple card variations
+- **Shiho** (日野森志步): Multiple card variations
+- **Akito** (东云彰人): Multiple card variations
+- **Touya** (青柳冬弥): Multiple card variations
+- **Kohane** (小豆泽心羽): Multiple card variations
+
+Total of 115 character images are available in `pjsk_emoji/assets/img/`.
 
 For detailed setup instructions, see [docs/RENDERER_SETUP.md](docs/RENDERER_SETUP.md).
 
@@ -359,6 +375,18 @@ Contributions are welcome! Please feel free to submit issues or pull requests.
 - [AstrBot Documentation](https://astrbot.app)
 - [AstrBot GitHub](https://github.com/Soulter/AstrBot)
 - [Plugin Development Guide](https://astrbot.app/plugin-dev)
+
+## Attribution
+
+### Character Images
+
+The character images included in `pjsk_emoji/assets/img/` are imported from the [koishi-plugin-pjsk-pptr](https://github.com/kamicry/koishi-plugin-pjsk-pptr) project.
+
+**Source**: https://github.com/kamicry/koishi-plugin-pjsk-pptr  
+**Import Date**: 2024-11-15  
+**Total Images**: 115
+
+These images are used in accordance with the original project's license terms. Users of this plugin should be aware of and respect the licensing and usage rights of these character images.
 
 ## License
 

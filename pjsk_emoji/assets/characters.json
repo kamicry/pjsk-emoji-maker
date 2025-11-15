@@ -6,22 +6,25 @@
       "aliases": ["初音未来", "初音", "miku", "hatsune", "hatsune miku"],
       "group": "MORE MORE JUMP!",
       "image_path": "emoji_images/miku.png",
+      "character_images_path": "img/Miku",
       "color": "#39C5BB"
     },
     "星乃一歌": {
       "id": "ichika",
-      "name": "星乃一歌", 
+      "name": "星乃一歌",
       "aliases": ["星乃一歌", "一歌", "ichika"],
       "group": "Leo/need",
       "image_path": "emoji_images/ichika.png",
+      "character_images_path": "img/Ichika",
       "color": "#FF6B9D"
     },
     "天马咲希": {
       "id": "saki",
       "name": "天马咲希",
       "aliases": ["天马咲希", "咲希", "saki"],
-      "group": "Leo/need", 
+      "group": "Leo/need",
       "image_path": "emoji_images/saki.png",
+      "character_images_path": "img/Saki",
       "color": "#FFD93D"
     },
     "望月穗波": {
@@ -29,7 +32,8 @@
       "name": "望月穗波",
       "aliases": ["望月穗波", "穗波", "honami"],
       "group": "Leo/need",
-      "image_path": "emoji_images/honami.png", 
+      "image_path": "emoji_images/honami.png",
+      "character_images_path": "img/Honami",
       "color": "#6BCF7F"
     },
     "日野森志步": {
@@ -38,30 +42,34 @@
       "aliases": ["日野森志步", "志步", "shiho"],
       "group": "Leo/need",
       "image_path": "emoji_images/shiho.png",
+      "character_images_path": "img/Shiho",
       "color": "#4A90E2"
     },
     "东云彰人": {
-      "id": "akito", 
+      "id": "akito",
       "name": "东云彰人",
       "aliases": ["东云彰人", "彰人", "akito"],
       "group": "Vivid BAD SQUAD",
       "image_path": "emoji_images/akito.png",
+      "character_images_path": "img/Akito",
       "color": "#FF6B35"
     },
     "青柳冬弥": {
       "id": "toya",
-      "name": "青柳冬弥", 
+      "name": "青柳冬弥",
       "aliases": ["青柳冬弥", "冬弥", "toya"],
       "group": "Vivid BAD SQUAD",
       "image_path": "emoji_images/toya.png",
+      "character_images_path": "img/Touya",
       "color": "#9B59B6"
     },
     "小豆泽心羽": {
       "id": "kohane",
       "name": "小豆泽心羽",
-      "aliases": ["小豆泽心羽", "心羽", "kohane"], 
+      "aliases": ["小豆泽心羽", "心羽", "kohane"],
       "group": "Nightcord at 25:00",
       "image_path": "emoji_images/kohane.png",
+      "character_images_path": "img/Kohane",
       "color": "#E74C3C"
     }
   },
@@ -73,14 +81,14 @@
       "color": "#FF6B9D"
     },
     "MORE MORE JUMP!": {
-      "id": "more_more_jump", 
+      "id": "more_more_jump",
       "name": "MORE MORE JUMP!",
       "members": ["初音未来"],
       "color": "#39C5BB"
     },
     "Vivid BAD SQUAD": {
       "id": "vivid_bad_squad",
-      "name": "Vivid BAD SQUAD", 
+      "name": "Vivid BAD SQUAD",
       "members": ["东云彰人", "青柳冬弥"],
       "color": "#FF6B35"
     },
@@ -92,9 +100,12 @@
     }
   },
   "metadata": {
-    "version": "1.0.0",
+    "version": "2.0.0",
     "total_characters": 8,
     "total_groups": 4,
-    "generated_at": "2024-01-01T00:00:00Z"
+    "total_character_images": 115,
+    "generated_at": "2024-01-01T00:00:00Z",
+    "image_source": "https://github.com/kamicry/koishi-plugin-pjsk-pptr",
+    "image_import_date": "2024-11-15"
   }
 }
