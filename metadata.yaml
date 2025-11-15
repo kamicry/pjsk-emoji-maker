@@ -1,5 +1,5 @@
 name: pjsk-maker
-desc: PJSk card adjustment command suite with advanced Koishi-style draw command, text processing, adaptive sizing, and persistent state management.
+desc: PJSk表情包制作
 version: v1.2.0
 author:  kamicry
 repo: https://github.com/kamicry/pjsk-emoji-maker
