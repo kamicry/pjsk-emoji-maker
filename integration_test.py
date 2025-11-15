@@ -9,7 +9,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from tests.mock_astrbot import setup_mocks
-from config import PJSkConfig
+from unittest.mock import Mock
 
 
 async def test_koishi_draw_integration():
@@ -19,16 +19,16 @@ async def test_koishi_draw_integration():
     setup_mocks()
     
     # Import after mocks are set up
-    from main import MyPlugin
-    from unittest.mock import Mock
+    from main import PjskEmojiMaker
     
-    # Create plugin instance
+    # Create plugin instance with mocked config
     mock_context = Mock()
-    plugin = MyPlugin(mock_context)
+    mock_config = Mock()
+    mock_config.get = Mock(side_effect=lambda key, default=None: {
+        'adaptive_text_sizing': False,
+    }.get(key, default))
     
-    # Mock config for predictable results
-    config = PJSkConfig(adaptive_text_sizing=False)
-    plugin._config_manager._config = config
+    plugin = PjskEmojiMaker(mock_context, mock_config)
     
     # Test 1: Basic draw
     print("Test 1: Basic draw command")

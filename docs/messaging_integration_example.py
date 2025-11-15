@@ -10,7 +10,7 @@ For the actual plugin implementation, see main.py.
 from __future__ import annotations
 
 from astrbot.api.event import AstrMessageEvent
-from config import ConfigManager, PJSkConfig
+from main import ConfigWrapper
 from models import RenderState
 from pjsk_emoji.messaging import (
     MessageAdapter,
@@ -22,13 +22,13 @@ from pjsk_emoji.messaging import (
 class ExamplePjskPlugin:
     """Example showing messaging adapter integration."""
     
-    def __init__(self):
-        self._config_manager = ConfigManager()
+    def __init__(self, config):
+        self.config = ConfigWrapper(config)
     
     # Example 1: Simple text response with mention
     async def example_text_response(self, event: AstrMessageEvent):
         """Send a simple text response respecting mention config."""
-        config = self._config_manager.get()
+        config = self.config
         adapter = MessageAdapter(event, config)
         
         # The adapter automatically applies mention_user_on_render if configured
@@ -42,7 +42,7 @@ class ExamplePjskPlugin:
         image_bytes: bytes,
     ):
         """Send composite response with text, image, and buttons."""
-        config = self._config_manager.get()
+        config = self.config
         adapter = MessageAdapter(event, config)
         
         # Build summary text
@@ -74,7 +74,7 @@ class ExamplePjskPlugin:
         """Example using the builder pattern for complex messages."""
         from pjsk_emoji.messaging import MessageComponentBuilder
         
-        config = self._config_manager.get()
+        config = self.config
         
         builder = MessageComponentBuilder(event)
         
@@ -116,7 +116,7 @@ class ExamplePjskPlugin:
         """Handle errors with configuration awareness."""
         from pjsk_emoji.messaging import should_mention_user
         
-        config = self._config_manager.get()
+        config = self.config
         adapter = MessageAdapter(event, config)
         
         # Build error message
@@ -141,7 +141,7 @@ class ExamplePjskPlugin:
         state: RenderState,
     ):
         """Send multiple messages in sequence."""
-        config = self._config_manager.get()
+        config = self.config
         adapter = MessageAdapter(event, config)
         
         # Send state summary
@@ -203,7 +203,7 @@ class ExamplePjskPlugin:
             get_retract_delay_ms,
         )
         
-        config = self._config_manager.get()
+        config = self.config
         adapter = MessageAdapter(event, config)
         
         # Check if we should wait for user input
@@ -265,7 +265,7 @@ state_ttl_hours: 24
 In main.py, you would use these adapters like:
 
 1. In draw command:
-   config = self._config_manager.get()
+   config = self.config
    adapter = MessageAdapter(event, config)
    yield adapter.emit_composite(
        text=summary_text,
