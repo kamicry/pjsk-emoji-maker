@@ -4,23 +4,27 @@ A comprehensive plugin for [AstrBot](https://astrbot.app) providing PJSk card re
 
 ## Features
 
-- PJSk card rendering with state persistence
-- Advanced Koishi-style draw command with flag parsing (-n, -x, -y, -r, -s, -l, -c, --daf)
-- Text content adjustment with validation and sanitization
-- Adaptive font sizing based on text length
-- Font size adjustment (absolute and relative)
-- Line spacing adjustment (absolute and relative)
-- Curve effect toggle with intensity control
-- Position adjustment (up/down/left/right with custom steps)
-- Role/character selection with random option
-- Helper functions for text calculations (offsets, font size, dimensions)
-- Comprehensive configuration system with YAML persistence
-- Mock renderer with image generation
-- Comprehensive error handling and user guidance
-- Support for Chinese and English command aliases
-- Range validation and clamping for all parameters
-- State persistence with TTL support
-- Concurrent-safe state management
+- **Advanced Rendering System**: Playwright-based high-quality card and list rendering
+- **PJSk card rendering** with state persistence
+- **Advanced Koishi-style draw command** with flag parsing (-n, -x, -y, -r, -s, -l, -c, --daf)
+- **Character list rendering** with multiple view modes (all, groups, group detail)
+- **Asset management** with structured character data and image resources
+- **Template-based rendering** using Jinja2 for flexible HTML generation
+- **Text content adjustment** with validation and sanitization
+- **Adaptive font sizing** based on text length
+- **Font size adjustment** (absolute and relative)
+- **Line spacing adjustment** (absolute and relative)
+- **Curve effect toggle** with intensity control
+- **Position adjustment** (up/down/left/right with custom steps)
+- **Role/character selection** with random option
+- **Helper functions** for text calculations (offsets, font size, dimensions)
+- **Comprehensive configuration** system with YAML persistence
+- **Browser-based rendering** with Playwright for high-quality output
+- **Comprehensive error handling** and user guidance
+- **Support for Chinese and English** command aliases
+- **Range validation** and clamping for all parameters
+- **State persistence** with TTL support
+- **Concurrent-safe state management**
 
 ## Installation
 
@@ -28,8 +32,9 @@ A comprehensive plugin for [AstrBot](https://astrbot.app) providing PJSk card re
 
 - AstrBot v4.5.0 or higher
 - Python 3.8 or higher
+- Playwright browsers (automatically installed)
 
-### Installation Steps
+### Quick Setup
 
 1. Place this plugin directory in your AstrBot plugins folder:
    ```bash
@@ -37,15 +42,53 @@ A comprehensive plugin for [AstrBot](https://astrbot.app) providing PJSk card re
    git clone <repository-url> helloworld
    ```
 
-2. Install dependencies (if any):
+2. Run the automated setup script:
    ```bash
-   # No external dependencies required for this basic plugin
-   # AstrBot core dependencies are automatically available
+   cd helloworld
+   chmod +x scripts/setup_renderer.sh
+   ./scripts/setup_renderer.sh
    ```
 
 3. Restart AstrBot or reload plugins through the AstrBot interface
 
 4. The plugin should now be active and ready to use
+
+### Manual Setup
+
+If the automated script doesn't work, follow these steps:
+
+1. **Install Python dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   playwright install
+   ```
+
+2. **Install system dependencies** (Ubuntu/Debian):
+   ```bash
+   sudo apt-get install -y libnspr4 libnss3 libatk1.0-0t64 libatk-bridge2.0-0t64 \
+       libcups2t64 libxkbcommon0 libatspi2.0-0t64 libxcomposite1 libxdamage1 \
+       libxfixes3 libxrandr2 libgbm1 libcairo2 libpango-1.0-0 libasound2t64
+   ```
+
+3. **Generate placeholder assets**:
+   ```bash
+   python3 scripts/generate_placeholder_images.py
+   ```
+
+4. **Test the renderer**:
+   ```bash
+   python3 scripts/quick_renderer_test.py
+   ```
+
+### Asset Structure
+
+The renderer requires assets in `pjsk_emoji/assets/`:
+- `characters.json`: Character database and metadata
+- `emoji_images/`: Character portrait images
+- `fonts/`: Font files for text rendering
+- `templates/`: HTML templates for rendering
+
+For detailed setup instructions, see [docs/RENDERER_SETUP.md](docs/RENDERER_SETUP.md).
 
 ## Usage
 

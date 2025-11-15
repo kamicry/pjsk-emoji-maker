@@ -11,7 +11,6 @@ from astrbot.api.star import Context, Star, register
 from config import ConfigManager, PJSkConfig
 from models import RenderState
 from persistence import StatePersistence
-from renderer import MockRenderer
 from utils import (
     applyDefaults,
     calculateOffsets,
@@ -24,6 +23,7 @@ from utils import (
 from pjsk_emoji.domain import (
     get_character_name,
     get_character_image_buffer,
+    get_character_list_image,
     format_character_list,
     format_character_groups,
     format_character_detail,
@@ -34,6 +34,7 @@ from pjsk_emoji.messaging import (
     create_adjustment_buttons,
     encode_koishi_button_text,
 )
+from pjsk_emoji.renderer import renderer_manager
 
 
 
@@ -187,7 +188,7 @@ class PjskEmojiMaker(Star):
         self._state_manager = StateManager()
         self._persistence = StatePersistence()
         self._config_manager = ConfigManager()
-        self._renderer = MockRenderer()
+        self._renderer = None  # Will be initialized in initialize()
         self._random = random.Random()
         self._command_lookup = self._build_alias_lookup(self.COMMAND_ALIASES)
         self._direction_lookup = self._build_alias_lookup(self.DIRECTION_ALIASES)
@@ -197,9 +198,13 @@ class PjskEmojiMaker(Star):
 
     async def initialize(self):
         """插件初始化逻辑。"""
+        # Initialize the renderer
+        self._renderer = await renderer_manager.get_renderer()
 
     async def terminate(self):
         """插件卸载时的清理逻辑。"""
+        # Close the renderer
+        await renderer_manager.close()
 
     def _state_key(self, event: AstrMessageEvent) -> Tuple[str, str]:
         platform = getattr(event, "platform", "unknown") or "unknown"
@@ -385,14 +390,14 @@ class PjskEmojiMaker(Star):
         try:
             # Generate the image
             curve_intensity = validateCurveIntensity(config.default_curve_intensity)
-            image_bytes = self._renderer.render_card(
+            image_bytes = await self._renderer.render_emoji_card(
                 text=state.text,
+                character_name=state.role,
                 font_size=state.font_size,
                 line_spacing=state.line_spacing,
                 curve_enabled=state.curve_enabled,
                 offset_x=state.offset_x,
                 offset_y=state.offset_y,
-                role=state.role,
                 curve_intensity=curve_intensity,
                 enable_shadow=config.enable_text_shadow,
                 emoji_set=config.default_emoji_set,

@@ -45,10 +45,11 @@ py-modules = ["main"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["tests*", "docs*"]
+include = ["pjsk_emoji*", "tests*", "docs*"]
 
 [tool.setuptools.package-data]
-"*" = ["*.yaml", "*.yml", "*.md"]
+"*" = ["*.yaml", "*.yml", "*.md", "*.json", "*.html", "*.png", "*.ttc"]
+"pjsk_emoji" = ["assets/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
