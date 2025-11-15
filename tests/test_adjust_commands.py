@@ -4,7 +4,7 @@ Test suite for PJSk adjustment commands.
 
 import pytest
 from unittest.mock import Mock
-from main import MyPlugin
+from main import PjskEmojiMaker
 
 
 class TestPJSkDrawCommand:
@@ -19,7 +19,7 @@ class TestPJSkDrawCommand:
     @pytest.fixture
     def plugin(self, mock_context):
         """Create a plugin instance with mock context."""
-        return MyPlugin(mock_context)
+        return PjskEmojiMaker(mock_context)
 
     @pytest.mark.asyncio
     async def test_draw_creates_initial_state(self, plugin):
@@ -93,7 +93,7 @@ class TestAdjustCommandErrors:
     @pytest.fixture
     def plugin(self, mock_context):
         """Create a plugin instance with mock context."""
-        return MyPlugin(mock_context)
+        return PjskEmojiMaker(mock_context)
 
     @pytest.mark.asyncio
     async def test_adjust_without_state_shows_error(self, plugin):
@@ -135,7 +135,7 @@ class TestAdjustTextCommand:
     def plugin_with_state(self):
         """Create a plugin with initialized state."""
         context = Mock()
-        plugin = MyPlugin(context)
+        plugin = PjskEmojiMaker(context)
         mock_event = Mock()
         mock_event.platform = "test"
         mock_event.session_id = "test_session"
@@ -183,7 +183,7 @@ class TestAdjustFontSizeCommand:
     def plugin_with_state(self):
         """Create a plugin with initialized state."""
         context = Mock()
-        plugin = MyPlugin(context)
+        plugin = PjskEmojiMaker(context)
         mock_event = Mock()
         mock_event.platform = "test"
         mock_event.session_id = "test_session"
@@ -283,7 +283,7 @@ class TestAdjustLineSpacingCommand:
     def plugin_with_state(self):
         """Create a plugin with initialized state."""
         context = Mock()
-        plugin = MyPlugin(context)
+        plugin = PjskEmojiMaker(context)
         mock_event = Mock()
         mock_event.platform = "test"
         mock_event.session_id = "test_session"
@@ -351,7 +351,7 @@ class TestAdjustCurveCommand:
     def plugin_with_state(self):
         """Create a plugin with initialized state."""
         context = Mock()
-        plugin = MyPlugin(context)
+        plugin = PjskEmojiMaker(context)
         mock_event = Mock()
         mock_event.platform = "test"
         mock_event.session_id = "test_session"
@@ -417,7 +417,7 @@ class TestAdjustPositionCommand:
     def plugin_with_state(self):
         """Create a plugin with initialized state."""
         context = Mock()
-        plugin = MyPlugin(context)
+        plugin = PjskEmojiMaker(context)
         mock_event = Mock()
         mock_event.platform = "test"
         mock_event.session_id = "test_session"
@@ -523,7 +523,7 @@ class TestAdjustRoleCommand:
     def plugin_with_state(self):
         """Create a plugin with initialized state."""
         context = Mock()
-        plugin = MyPlugin(context)
+        plugin = PjskEmojiMaker(context)
         mock_event = Mock()
         mock_event.platform = "test"
         mock_event.session_id = "test_session"
@@ -605,7 +605,7 @@ class TestAdjustCommandSequence:
     def plugin_with_state(self):
         """Create a plugin with initialized state."""
         context = Mock()
-        plugin = MyPlugin(context)
+        plugin = PjskEmojiMaker(context)
         mock_event = Mock()
         mock_event.platform = "test"
         mock_event.session_id = "test_session"
@@ -662,7 +662,7 @@ class TestStateKeyGeneration:
     def plugin(self):
         """Create a plugin instance."""
         context = Mock()
-        return MyPlugin(context)
+        return PjskEmojiMaker(context)
 
     def test_state_key_uses_session_id(self, plugin):
         """Test that state key uses session_id when available."""
