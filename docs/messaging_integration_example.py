@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from astrbot.api.event import AstrMessageEvent
 from main import ConfigWrapper
-from models import RenderState
+from pjsk_emoji.models import RenderState
 from pjsk_emoji.messaging import (
     MessageAdapter,
     create_adjustment_buttons,

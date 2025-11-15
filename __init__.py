@@ -9,7 +9,7 @@ __author__ = "PJSk Community"
 __all__ = ["PjskEmojiMaker"]
 
 try:
-    from main import PjskEmojiMaker
+    from .main import PjskEmojiMaker
     __all__ = ["PjskEmojiMaker"]
 except ImportError:
     pass

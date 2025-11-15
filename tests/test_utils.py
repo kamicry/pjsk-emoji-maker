@@ -1,7 +1,7 @@
 """Tests for utility functions."""
 
 import pytest
-from utils import (
+from pjsk_emoji.utils import (
     calculateOffsets,
     calculateFontSize,
     findLongestLine,
