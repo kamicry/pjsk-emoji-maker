@@ -9,9 +9,9 @@ from astrbot.api.event import AstrMessageEvent, MessageEventResult, filter
 from astrbot.api.star import Context, Star, register
 from astrbot.api import AstrBotConfig
 
-from models import RenderState
-from persistence import StatePersistence
-from utils import (
+from pjsk_emoji.models import RenderState
+from pjsk_emoji.persistence import StatePersistence
+from pjsk_emoji.utils import (
     applyDefaults,
     calculateOffsets,
     calculateFontSize,
