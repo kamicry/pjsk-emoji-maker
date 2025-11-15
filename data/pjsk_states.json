@@ -10,7 +10,7 @@
         "offset_y": -240,
         "role": "初音未来"
       },
-      "timestamp": 1763176090.8665688
+      "timestamp": 1763176137.2855806
     },
     "test:integration_test": {
       "state": {
@@ -25,5 +25,5 @@
       "timestamp": 1763173954.3851604
     }
   },
-  "last_updated": 1763176090.86657
+  "last_updated": 1763176137.2855818
 }
