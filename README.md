@@ -1,13 +1,19 @@
-# Hello World Plugin
+# PJSk Card Adjustment Suite
 
-A simple example plugin for [AstrBot](https://astrbot.app) demonstrating basic command handling, message processing, and event responses.
+A comprehensive plugin for [AstrBot](https://astrbot.app) providing PJSk card rendering and adjustment commands with extensive customization options.
 
 ## Features
 
-- Simple command handler responding to `/helloworld`
-- User greeting with message echo functionality
-- Message chain logging and processing
-- Demonstrates AstrBot plugin architecture and lifecycle hooks
+- PJSk card rendering with state persistence
+- Text content adjustment with validation
+- Font size adjustment (absolute and relative)
+- Line spacing adjustment (absolute and relative)
+- Curve effect toggle
+- Position adjustment (up/down/left/right with custom steps)
+- Role/character selection with random option
+- Comprehensive error handling and user guidance
+- Support for Chinese and English command aliases
+- Range validation and clamping for all parameters
 
 ## Installation
 
@@ -40,18 +46,87 @@ A simple example plugin for [AstrBot](https://astrbot.app) demonstrating basic c
 
 | Command | Description | Usage Example |
 |---------|-------------|---------------|
-| `/helloworld` | Greets the user and echoes their message | `/helloworld Hello there!` |
+| `/pjsk.draw` | Initialize or refresh PJSk card state | `/pjsk.draw 卡面文本` |
+| `/pjsk.调整` | Adjust card parameters and re-render | `/pjsk.调整 字号.大` |
+| `/helloworld` | Legacy greeting command | `/helloworld Hello!` |
 
 ### Command Details
 
+#### `/pjsk.draw`
+
+Initialize a new PJSk card state or refresh the current configuration. Optionally provide text content.
+
+**Usage:**
+```
+/pjsk.draw                    # Initialize with default text
+/pjsk.draw 自定义文本内容       # Initialize with custom text
+```
+
+**Response:** Displays current state summary with all parameters.
+
+#### `/pjsk.调整` (Adjustment Commands)
+
+Modify card parameters. Without arguments, displays command guidance.
+
+**Text Adjustment:**
+```
+/pjsk.调整 文本 新的文本内容
+/pjsk.调整 text New text content
+```
+
+**Font Size Adjustment:**
+```
+/pjsk.调整 字号 48            # Set absolute size (18-84px)
+/pjsk.调整 字号.大            # Increase by 4px
+/pjsk.调整 字号.小            # Decrease by 4px
+/pjsk.调整 font-size 60       # English alias
+```
+
+**Line Spacing Adjustment:**
+```
+/pjsk.调整 行距 1.8           # Set absolute spacing (0.6-3.0)
+/pjsk.调整 行距.大            # Increase by 0.1
+/pjsk.调整 行距.小            # Decrease by 0.1
+```
+
+**Curve Toggle:**
+```
+/pjsk.调整 曲线 开            # Turn on
+/pjsk.调整 曲线 关            # Turn off
+/pjsk.调整 曲线 切换          # Toggle
+/pjsk.调整 curve toggle       # English alias
+```
+
+**Position Adjustment:**
+```
+/pjsk.调整 位置.上            # Move up by 12px
+/pjsk.调整 位置.下 24         # Move down by 24px
+/pjsk.调整 位置.左            # Move left by 12px
+/pjsk.调整 位置.右 30         # Move right by 30px
+/pjsk.调整 pos.up 15          # English alias
+```
+
+**Role/Character Change:**
+```
+/pjsk.调整 人物 初音未来      # Change to specific character
+/pjsk.调整 人物 miku          # Using alias
+/pjsk.调整 人物 -r            # Random character
+/pjsk.调整 role ichika        # English alias
+```
+
+**Available Characters:**
+- 初音未来 (miku, hatsune)
+- 星乃一歌 (ichika)
+- 天马咲希 (saki)
+- 望月穗波 (honami)
+- 日野森志步 (shiho)
+- 东云彰人 (akito)
+- 青柳冬弥 (toya)
+- 小豆泽心羽 (kohane)
+
 #### `/helloworld`
 
-Sends a greeting to the user and echoes back the message content.
-
-**Response Format:**
-```
-Hello, {user_name}, 你发了 {message_content}!
-```
+Legacy greeting command for backward compatibility.
 
 **Example:**
 ```
