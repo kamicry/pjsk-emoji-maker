@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import io
+import logging
 from typing import Dict, Iterable, List, Optional, Tuple
 
-from astrbot.api import logger
-from renderer import MockRenderer
+try:
+    from astrbot.api import logger
+except ImportError:
+    logger = logging.getLogger(__name__)
 
 
 # Character database
@@ -73,7 +76,7 @@ def get_character_name(raw_input: str) -> Optional[str]:
     return None
 
 
-def get_character_image_buffer(
+async def get_character_image_buffer(
     character_name: str,
     text: str = "",
     font_size: int = 42,
@@ -102,17 +105,18 @@ def get_character_image_buffer(
     Returns:
         PNG image bytes
     """
-    renderer = MockRenderer()
+    from .renderer import get_renderer
     
     try:
-        image_bytes = renderer.render_card(
+        renderer = await get_renderer()
+        image_bytes = await renderer.render_emoji_card(
             text=text,
+            character_name=character_name,
             font_size=font_size,
             line_spacing=line_spacing,
             curve_enabled=curve_enabled,
             offset_x=offset_x,
             offset_y=offset_y,
-            role=character_name,
             curve_intensity=curve_intensity,
             enable_shadow=enable_shadow,
             emoji_set=emoji_set,
@@ -148,6 +152,33 @@ def format_character_groups() -> str:
             lines.append(f"  • {member}")
         lines.append("")
     return "\n".join(lines)
+
+
+async def get_character_list_image(
+    list_type: str = "all",
+    group_filter: Optional[str] = None
+) -> bytes:
+    """Generate image buffer for character list.
+    
+    Args:
+        list_type: Type of list ("all", "groups", "group_detail")
+        group_filter: Filter by specific group name
+        
+    Returns:
+        PNG image bytes
+    """
+    from .renderer import get_renderer
+    
+    try:
+        renderer = await get_renderer()
+        image_bytes = await renderer.render_character_list(
+            list_type=list_type,
+            group_filter=group_filter
+        )
+        return image_bytes
+    except Exception as e:
+        logger.error("Failed to generate list image: %s", str(e))
+        raise
 
 
 def format_character_detail(character_name: str) -> str:
