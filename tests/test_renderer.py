@@ -2,7 +2,7 @@
 
 import pytest
 from unittest.mock import patch
-from renderer import MockRenderer
+from pjsk_emoji.mock_renderer import MockRenderer
 
 
 class TestMockRenderer:

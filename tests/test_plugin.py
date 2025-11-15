@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock, AsyncMock, MagicMock
-from main import PjskEmojiMaker
+from main import PjskEmojiMaker  # main is in root, not in pjsk_emoji package
 
 
 class TestPjskEmojiMaker:

@@ -5,8 +5,8 @@ import tempfile
 import os
 import time
 from unittest.mock import patch
-from persistence import StatePersistence
-from models import RenderState
+from pjsk_emoji.persistence import StatePersistence
+from pjsk_emoji.models import RenderState
 
 
 class TestStatePersistence:

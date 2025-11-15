@@ -1,4 +1,4 @@
-"""Mock renderer for PJSk card generation."""
+"""Mock renderer for PJSk card generation - used for testing."""
 
 from __future__ import annotations
 

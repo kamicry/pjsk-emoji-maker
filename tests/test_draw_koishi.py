@@ -3,9 +3,9 @@
 import pytest
 from unittest.mock import Mock, patch
 from main import PjskEmojiMaker
-from models import RenderState
-from utils import parseKoishiFlags, calculateOffsets, calculateFontSize
-from persistence import StatePersistence
+from pjsk_emoji.models import RenderState
+from pjsk_emoji.utils import parseKoishiFlags, calculateOffsets, calculateFontSize
+from pjsk_emoji.persistence import StatePersistence
 
 
 class TestPJSkDrawKoishiCommand:
