@@ -19,6 +19,9 @@ class PJSkConfig:
     # Messaging options  
     show_success_messages: bool = True
     mention_user_on_render: bool = False
+    should_wait_for_user_input_before_sending_commands: bool = False
+    should_mention_user_in_message: bool = False
+    retract_delay_ms: Optional[int] = None
     
     # Rendering options
     default_curve_intensity: float = 0.5
