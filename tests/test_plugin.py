@@ -1,10 +1,10 @@
 import pytest
 from unittest.mock import Mock, AsyncMock, MagicMock
-from main import MyPlugin
+from main import PjskEmojiMaker
 
 
-class TestMyPlugin:
-    """Test suite for MyPlugin class"""
+class TestPjskEmojiMaker:
+    """Test suite for PjskEmojiMaker class"""
     
     @pytest.fixture
     def mock_context(self):
@@ -15,11 +15,11 @@ class TestMyPlugin:
     @pytest.fixture
     def plugin(self, mock_context):
         """Create a plugin instance with mock context"""
-        return MyPlugin(mock_context)
+        return PjskEmojiMaker(mock_context)
     
     def test_plugin_initialization(self, mock_context):
         """Test that plugin can be instantiated"""
-        plugin = MyPlugin(mock_context)
+        plugin = PjskEmojiMaker(mock_context)
         assert plugin is not None
         assert hasattr(plugin, 'initialize')
         assert hasattr(plugin, 'terminate')
@@ -104,7 +104,7 @@ class TestPluginMetadata:
     
     def test_plugin_has_docstring(self):
         """Test that plugin methods have docstrings"""
-        plugin_class = MyPlugin
+        plugin_class = PjskEmojiMaker
         
         assert plugin_class.__init__.__doc__ is None or plugin_class.__init__.__doc__ != ""
         assert plugin_class.initialize.__doc__ is not None
@@ -114,12 +114,12 @@ class TestPluginMetadata:
     def test_plugin_inherits_from_star(self):
         """Test that plugin inherits from Star base class"""
         from astrbot.api.star import Star
-        assert issubclass(MyPlugin, Star)
+        assert issubclass(PjskEmojiMaker, Star)
     
     def test_command_handler_has_filter_decorator(self):
         """Test that helloworld method has proper command decorator"""
-        assert hasattr(MyPlugin.helloworld, '__name__')
-        assert MyPlugin.helloworld.__doc__ == "这是一个 hello world 指令"
+        assert hasattr(PjskEmojiMaker.helloworld, '__name__')
+        assert PjskEmojiMaker.helloworld.__doc__ == "这是一个 hello world 指令"
 
 
 class TestMessageFormatting:
@@ -157,5 +157,5 @@ class TestPluginRegistration:
         """Test that plugin is properly registered"""
         from astrbot.api.star import register
         
-        assert MyPlugin.__module__ == 'main'
-        assert MyPlugin.__name__ == 'MyPlugin'
+        assert PjskEmojiMaker.__module__ == 'main'
+        assert PjskEmojiMaker.__name__ == 'PjskEmojiMaker'

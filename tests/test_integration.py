@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock, patch
-from main import MyPlugin
+from main import PjskEmojiMaker
 
 
 class TestPluginIntegration:
@@ -17,13 +17,13 @@ class TestPluginIntegration:
     @pytest.fixture
     def plugin(self, mock_context):
         """Create a plugin instance for integration testing"""
-        return MyPlugin(mock_context)
+        return PjskEmojiMaker(mock_context)
     
     @pytest.mark.smoke
     @pytest.mark.asyncio
     async def test_plugin_full_lifecycle(self, mock_context):
         """Smoke test: Full plugin lifecycle"""
-        plugin = MyPlugin(mock_context)
+        plugin = PjskEmojiMaker(mock_context)
         
         await plugin.initialize()
         
@@ -100,7 +100,7 @@ class TestPluginIntegration:
     @pytest.mark.asyncio
     async def test_plugin_state_consistency(self, mock_context):
         """Test that plugin maintains consistent state across calls"""
-        plugin = MyPlugin(mock_context)
+        plugin = PjskEmojiMaker(mock_context)
         await plugin.initialize()
         
         mock_event1 = Mock()
@@ -171,7 +171,7 @@ class TestMessageChainHandling:
     @pytest.mark.asyncio
     async def test_logging_message_chain(self, mock_context):
         """Test that message chains are properly logged"""
-        plugin = MyPlugin(mock_context)
+        plugin = PjskEmojiMaker(mock_context)
         
         with patch('main.logger') as mock_logger:
             mock_event = Mock()

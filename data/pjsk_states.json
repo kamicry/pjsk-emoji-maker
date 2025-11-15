@@ -2,15 +2,15 @@
   "states": {
     "test:test_session": {
       "state": {
-        "text": "Persistence",
-        "font_size": 50,
-        "line_spacing": 1.2,
+        "text": "Test",
+        "font_size": 84,
+        "line_spacing": 3.0,
         "curve_enabled": false,
-        "offset_x": 12,
-        "offset_y": 240,
+        "offset_x": 240,
+        "offset_y": -240,
         "role": "初音未来"
       },
-      "timestamp": 1763174148.7946467
+      "timestamp": 1763176137.2855806
     },
     "test:integration_test": {
       "state": {
@@ -25,5 +25,5 @@
       "timestamp": 1763173954.3851604
     }
   },
-  "last_updated": 1763174148.794649
+  "last_updated": 1763176137.2855818
 }

@@ -21,6 +21,14 @@ from utils import (
     sanitizeText,
     validateCurveIntensity,
 )
+from pjsk_emoji.domain import (
+    get_character_name,
+    get_character_image_buffer,
+    format_character_list,
+    format_character_groups,
+    format_character_detail,
+    CHARACTER_NAMES,
+)
 
 
 
@@ -108,9 +116,9 @@ class MessagingHelper:
         ]
 
 
-@register("helloworld", "YourName", "一个简单的 Hello World 插件", "1.0.0")
-class MyPlugin(Star):
-    """AstrBot plugin providing PJSk draw and adjustment commands."""
+@register("pjsk_emoji_maker", "PJSk Community", "Project SEKAI 表情包制作工具", "2.0.0")
+class PjskEmojiMaker(Star):
+    """AstrBot plugin providing PJSk emoji maker and card rendering commands."""
 
     DEFAULT_TEXT = "这是一个新的卡面"
     DEFAULT_FONT_SIZE = 42
@@ -709,6 +717,86 @@ class MyPlugin(Star):
         except Exception as exc:
             logger.error("PJSk Koishi 渲染失败: %s", str(exc))
             yield helper.error(f"渲染失败：{str(exc)}")
+
+    @filter.command("pjsk")
+    async def list_root(self, event: AstrMessageEvent):
+        """PJSk 根命令：显示帮助和快捷选项。"""
+        lines = [
+            "🎨 Project SEKAI 表情包制作工具",
+            "",
+            "快速开始：",
+            "• /pjsk.draw 或 /pjsk.绘制 ─ 创建或刷新表情包",
+            "• /pjsk.列表 ─ 查看所有角色",
+            "",
+            "调整选项：",
+            "• /pjsk.调整 ─ 查看所有调整指令",
+            "",
+            "更多帮助：发送相应指令即可获取详细说明。",
+        ]
+        yield event.plain_result("\n".join(lines))
+
+    @filter.command("pjsk.列表")
+    async def list_guide(self, event: AstrMessageEvent):
+        """PJSk 列表指令：主列表流程。"""
+        raw_message = getattr(event, "message_str", "").strip()
+        
+        if not raw_message:
+            lines = [
+                "📋 角色列表查看",
+                "",
+                "选择查看方式：",
+                "• /pjsk.列表.全部 ─ 查看所有角色",
+                "• /pjsk.列表.角色分类 ─ 按组合分类查看",
+                "• /pjsk.列表.展开指定角色 <角色名> ─ 查看特定角色详情",
+                "",
+                "例如：/pjsk.列表.展开指定角色 初音未来",
+            ]
+            yield event.plain_result("\n".join(lines))
+            return
+        
+        first_token, remainder = self._extract_first_token(raw_message)
+        
+        if first_token.lower() in {"全部", "all"}:
+            yield event.plain_result(format_character_list())
+        elif first_token.lower() in {"角色分类", "group"}:
+            yield event.plain_result(format_character_groups())
+        else:
+            yield event.plain_result(
+                "未识别的列表选项。发送 /pjsk.列表 查看可用选项。"
+            )
+
+    @filter.command("pjsk.列表.全部")
+    async def list_all(self, event: AstrMessageEvent):
+        """PJSk 列表：显示所有角色。"""
+        yield event.plain_result(format_character_list())
+
+    @filter.command("pjsk.列表.角色分类")
+    async def list_by_group(self, event: AstrMessageEvent):
+        """PJSk 列表：按分类显示角色。"""
+        yield event.plain_result(format_character_groups())
+
+    @filter.command("pjsk.列表.展开指定角色")
+    async def list_expand_character(self, event: AstrMessageEvent):
+        """PJSk 列表：显示特定角色的详情。"""
+        raw_message = getattr(event, "message_str", "").strip()
+        
+        if not raw_message:
+            yield event.plain_result(
+                "请提供角色名称，例如：/pjsk.列表.展开指定角色 初音未来"
+            )
+            return
+        
+        character_name = get_character_name(raw_message)
+        if not character_name:
+            lines = [
+                f"❌ 未找到角色：{raw_message}",
+                "",
+                "发送 /pjsk.列表 查看可用角色。",
+            ]
+            yield event.plain_result("\n".join(lines))
+            return
+        
+        yield event.plain_result(format_character_detail(character_name))
 
     @filter.command("helloworld")
     async def helloworld(self, event: AstrMessageEvent):

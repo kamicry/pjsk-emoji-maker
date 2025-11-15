@@ -2,7 +2,7 @@
 
 import pytest
 from unittest.mock import Mock, patch
-from main import MyPlugin
+from main import PjskEmojiMaker
 from models import RenderState
 from utils import parseKoishiFlags, calculateOffsets, calculateFontSize
 from config import PJSkConfig
@@ -21,7 +21,7 @@ class TestPJSkDrawKoishiCommand:
     @pytest.fixture
     def plugin(self, mock_context):
         """Create a plugin instance with mock context."""
-        return MyPlugin(mock_context)
+        return PjskEmojiMaker(mock_context)
 
     @pytest.fixture
     def mock_event(self):
