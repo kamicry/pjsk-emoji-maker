@@ -147,12 +147,27 @@ class StateManager:
         self._states: Dict[Tuple[str, str], RenderState] = {}
 
     def get(self, key: Tuple[str, str]) -> Optional[RenderState]:
+        # Ensure key is hashable (tuple of strings)
+        if not isinstance(key, tuple) or len(key) != 2:
+            raise TypeError(f"StateManager key must be a tuple of (platform, session_id), got: {type(key)}")
+        if not all(isinstance(k, str) for k in key):
+            raise TypeError(f"StateManager key elements must be strings, got: {key}")
         return self._states.get(key)
 
     def set(self, key: Tuple[str, str], state: RenderState) -> None:
+        # Ensure key is hashable (tuple of strings)
+        if not isinstance(key, tuple) or len(key) != 2:
+            raise TypeError(f"StateManager key must be a tuple of (platform, session_id), got: {type(key)}")
+        if not all(isinstance(k, str) for k in key):
+            raise TypeError(f"StateManager key elements must be strings, got: {key}")
         self._states[key] = state
 
     def exists(self, key: Tuple[str, str]) -> bool:
+        # Ensure key is hashable (tuple of strings)
+        if not isinstance(key, tuple) or len(key) != 2:
+            raise TypeError(f"StateManager key must be a tuple of (platform, session_id), got: {type(key)}")
+        if not all(isinstance(k, str) for k in key):
+            raise TypeError(f"StateManager key elements must be strings, got: {key}")
         return key in self._states
 
 
@@ -310,6 +325,10 @@ class PjskEmojiMaker(Star):
 
     def _state_key(self, event: AstrMessageEvent) -> Tuple[str, str]:
         platform = getattr(event, "platform", "unknown") or "unknown"
+        # Ensure platform is a string (not an object like PlatformMetadata)
+        if not isinstance(platform, str):
+            platform = str(platform) or "unknown"
+        
         if hasattr(event, "session_id") and getattr(event, "session_id"):
             return platform, str(getattr(event, "session_id"))
 
@@ -774,7 +793,7 @@ class PjskEmojiMaker(Star):
             yield helper.error(str(exc))
             return
 
-        result = await self._render_via_draw(event, headline)
+        result = await self._render_and_respond(event, state, headline)
         yield result
 
     @filter.command("pjsk.绘制")
