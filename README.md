@@ -244,6 +244,9 @@ Additional configuration options can be added as needed. The system supports:
 ### Plugin Structure
 
 - `main.py` - Main plugin implementation with command handlers
+- `pjsk_emoji/domain.py` - Character database and validation helpers
+- `pjsk_emoji/messaging.py` - Message adapter utilities (NEW)
+- `config.py` - Configuration management
 - `metadata.yaml` - Plugin metadata and configuration
 - `tests/` - Unit and integration tests
 - `docs/` - Additional documentation
@@ -259,10 +262,25 @@ The plugin follows the standard AstrBot plugin pattern:
 
 ### Key Components
 
-- **MyPlugin Class**: Main plugin class extending `Star` base class
+- **PjskEmojiMaker Class**: Main plugin class extending `Star` base class
+- **MessageAdapter**: Unified interface for building and sending responses
+- **ButtonMatrix**: Koishi-style button grids for quick-reply actions
+- **StateManager**: In-memory state storage with persistence
 - **Context**: Provides access to AstrBot core functionality
 - **Event Handling**: Processes `AstrMessageEvent` for incoming messages
-- **Response Generation**: Uses `event.plain_result()` to send text responses
+- **Response Generation**: Uses adapter and `event.plain_result()` for responses
+
+### Messaging System (NEW)
+
+The plugin now includes a comprehensive messaging adapter system for building flexible responses:
+
+- **MessageAdapter**: Configuration-aware response building
+- **ButtonMatrix & ButtonMapping**: Koishi-style button grids
+- **MessageComponentBuilder**: Fluent builder for composite messages
+- **Pre-built Button Sets**: Adjustment buttons, list navigation buttons
+- **Koishi Encoding**: Text encoding for Koishi-compatible responses
+
+See [docs/MESSAGING_README.md](docs/MESSAGING_README.md) for details.
 
 ## Testing
 
