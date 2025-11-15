@@ -1,6 +1,6 @@
-name: helloworld
-display_name: Hello World Example
-desc: A simple Hello World plugin demonstrating AstrBot command handling and message responses.
-version: v1.0.0
+name: pjsk-adjust
+display_name: PJSk Card Adjustment Suite
+desc: PJSk card adjustment command suite with text, font size, line spacing, curve toggles, position, and role customization.
+version: v1.1.0
 author: AstrBot Community
 repo: https://github.com/astrbot/plugin-template
