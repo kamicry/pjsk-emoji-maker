@@ -7,8 +7,8 @@ from typing import Dict, Iterable, List, Optional, Tuple
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, MessageEventResult, filter
 from astrbot.api.star import Context, Star, register
+from astrbot.api.plugin import AstrBotConfig
 
-from config import ConfigManager, PJSkConfig
 from models import RenderState
 from persistence import StatePersistence
 from utils import (
@@ -36,6 +36,108 @@ from pjsk_emoji.messaging import (
 )
 from pjsk_emoji.renderer import renderer_manager
 
+
+class ConfigWrapper:
+    """Wraps AstrBotConfig to provide convenient access to plugin configuration."""
+    
+    def __init__(self, config: AstrBotConfig) -> None:
+        self.config = config
+    
+    def get(self, key: str, default=None):
+        """Get config value with optional default."""
+        try:
+            return self.config.get(key, default)
+        except (AttributeError, TypeError):
+            return default
+    
+    @property
+    def adaptive_text_sizing(self) -> bool:
+        return self.get('adaptive_text_sizing', True)
+    
+    @property
+    def enable_markdown_flow(self) -> bool:
+        return self.get('enable_markdown_flow', False)
+    
+    @property
+    def show_success_messages(self) -> bool:
+        return self.get('show_success_messages', True)
+    
+    @property
+    def mention_user_on_render(self) -> bool:
+        return self.get('mention_user_on_render', True)
+    
+    @property
+    def should_wait_for_user_input_before_sending_commands(self) -> bool:
+        return self.get('should_wait_for_user_input_before_sending_commands', False)
+    
+    @property
+    def should_mention_user_in_message(self) -> bool:
+        return self.get('should_mention_user_in_message', False)
+    
+    @property
+    def retract_delay_ms(self) -> int:
+        return self.get('retract_delay_ms', 0)
+    
+    @property
+    def default_curve_intensity(self) -> float:
+        return self.get('default_curve_intensity', 0.5)
+    
+    @property
+    def enable_text_shadow(self) -> bool:
+        return self.get('enable_text_shadow', True)
+    
+    @property
+    def default_emoji_set(self) -> str:
+        return self.get('default_emoji_set', 'apple')
+    
+    @property
+    def persistence_enabled(self) -> bool:
+        return self.get('persistence_enabled', True)
+    
+    @property
+    def state_ttl_hours(self) -> int:
+        return self.get('state_ttl_hours', 24)
+    
+    # Validation ranges - hardcoded since not exposed in schema
+    @property
+    def font_size_min(self) -> int:
+        return 18
+    
+    @property
+    def font_size_max(self) -> int:
+        return 84
+    
+    @property
+    def font_size_step(self) -> int:
+        return 4
+    
+    @property
+    def line_spacing_min(self) -> float:
+        return 0.6
+    
+    @property
+    def line_spacing_max(self) -> float:
+        return 3.0
+    
+    @property
+    def line_spacing_step(self) -> float:
+        return 0.1
+    
+    @property
+    def offset_min(self) -> int:
+        return -240
+    
+    @property
+    def offset_max(self) -> int:
+        return 240
+    
+    @property
+    def offset_step(self) -> int:
+        return 12
+    
+    @property
+    def max_text_length(self) -> int:
+        return 120
 
 
 class StateManager:
@@ -183,11 +285,11 @@ class PjskEmojiMaker(Star):
         "小豆泽心羽": {"小豆泽心羽", "心羽", "kohane"},
     }
 
-    def __init__(self, context: Context):
+    def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
+        self.config = ConfigWrapper(config)
         self._state_manager = StateManager()
         self._persistence = StatePersistence()
-        self._config_manager = ConfigManager()
         self._renderer = None  # Will be initialized in initialize()
         self._random = random.Random()
         self._command_lookup = self._build_alias_lookup(self.COMMAND_ALIASES)
@@ -234,8 +336,7 @@ class PjskEmojiMaker(Star):
         
         # Try to load from persistence if not in memory
         if state is None:
-            config = self._config_manager.get()
-            state = self._persistence.get_state(key[0], key[1], config.state_ttl_hours)
+            state = self._persistence.get_state(key[0], key[1], self.config.state_ttl_hours)
             if state:
                 self._state_manager.set(key, state)
         
@@ -328,15 +429,14 @@ class PjskEmojiMaker(Star):
     def _save_state(self, key: Tuple[str, str], state: RenderState) -> None:
         """Save state to both memory and persistence."""
         self._state_manager.set(key, state)
-        config = self._config_manager.get()
-        if config.persistence_enabled:
+        if self.config.persistence_enabled:
             self._persistence.set_state(key[0], key[1], state)
 
-    def _create_state_from_options(self, options: dict, config: PJSkConfig) -> RenderState:
+    def _create_state_from_options(self, options: dict) -> RenderState:
         """Create RenderState from parsed options."""
         text = options.get('text') or self.DEFAULT_TEXT
-        if config.adaptive_text_sizing and not options.get('font_size'):
-            font_size = calculateFontSize(text, min_size=config.font_size_min, max_size=config.font_size_max)
+        if self.config.adaptive_text_sizing and not options.get('font_size'):
+            font_size = calculateFontSize(text, min_size=self.config.font_size_min, max_size=self.config.font_size_max)
         else:
             font_size = options.get('font_size') or self.DEFAULT_FONT_SIZE
         
@@ -361,13 +461,13 @@ class PjskEmojiMaker(Star):
             role = self.DEFAULT_ROLE
         
         # Clamp values to config ranges
-        font_size = int(self._clamp(font_size, config.font_size_min, config.font_size_max))
-        line_spacing = round(self._clamp(line_spacing, config.line_spacing_min, config.line_spacing_max), 2)
-        offset_x = int(self._clamp(offset_x, config.offset_min, config.offset_max))
-        offset_y = int(self._clamp(offset_y, config.offset_min, config.offset_max))
+        font_size = int(self._clamp(font_size, self.config.font_size_min, self.config.font_size_max))
+        line_spacing = round(self._clamp(line_spacing, self.config.line_spacing_min, self.config.line_spacing_max), 2)
+        offset_x = int(self._clamp(offset_x, self.config.offset_min, self.config.offset_max))
+        offset_y = int(self._clamp(offset_y, self.config.offset_min, self.config.offset_max))
         
         # Sanitize text
-        text = sanitizeText(text, config.max_text_length)
+        text = sanitizeText(text, self.config.max_text_length)
         
         return RenderState(
             text=text,
@@ -383,13 +483,12 @@ class PjskEmojiMaker(Star):
         self, 
         event: AstrMessageEvent, 
         state: RenderState, 
-        headline: str,
-        config: PJSkConfig
+        headline: str
     ) -> MessageEventResult:
         """Render the card and send response."""
         try:
             # Generate the image
-            curve_intensity = validateCurveIntensity(config.default_curve_intensity)
+            curve_intensity = validateCurveIntensity(self.config.default_curve_intensity)
             image_bytes = await self._renderer.render_emoji_card(
                 text=state.text,
                 character_name=state.role,
@@ -399,8 +498,8 @@ class PjskEmojiMaker(Star):
                 offset_x=state.offset_x,
                 offset_y=state.offset_y,
                 curve_intensity=curve_intensity,
-                enable_shadow=config.enable_text_shadow,
-                emoji_set=config.default_emoji_set,
+                enable_shadow=self.config.enable_text_shadow,
+                emoji_set=self.config.default_emoji_set,
             )
             
             # Create response
@@ -410,7 +509,7 @@ class PjskEmojiMaker(Star):
             messages = []
             
             # Add mention if enabled
-            if config.mention_user_on_render:
+            if self.config.mention_user_on_render:
                 try:
                     sender_name = event.get_sender_name()
                     messages.append(f"@{sender_name} ")
@@ -418,7 +517,7 @@ class PjskEmojiMaker(Star):
                     pass
             
             # Add success message if enabled
-            if config.show_success_messages:
+            if self.config.show_success_messages:
                 messages.append(f"✨ {headline}")
                 messages.append("")
                 messages.extend(helper._state_lines(state))
@@ -680,53 +779,52 @@ class PjskEmojiMaker(Star):
 
     @filter.command("pjsk.绘制")
     async def draw_koishi(self, event: AstrMessageEvent):
-        """PJSk 绘制指令：支持 Koishi 风格选项的渲染命令。"""
-        
-        helper = MessagingHelper(event)
-        config = self._config_manager.get()
-        raw_message = getattr(event, "message_str", "").strip()
-        
-        try:
-            # Parse Koishi-style flags
-            options = parseKoishiFlags(raw_message)
-            
-            # Apply defaults
-            defaults = {
-                'text': None,
-                'offset_x': None,
-                'offset_y': None,
-                'role': None,
-                'font_size': None,
-                'line_spacing': None,
-                'curve': None,
-                'default_font': False
-            }
-            options = applyDefaults(options, defaults)
-            
-            # Create state from options
-            state = self._create_state_from_options(options, config)
-            
-            # Save state
-            key = self._state_key(event)
-            self._save_state(key, state)
-            
-            # Determine headline
-            if options['text']:
-                headline = "🎨 已完成自定义渲染"
-            elif options['default_font']:
-                headline = "🎨 已使用默认字体渲染"
-            else:
-                headline = "🎨 已完成渲染"
-            
-            logger.debug("PJSk Koishi 渲染：%s", headline)
-            
-            # Render and respond
-            result = await self._render_and_respond(event, state, headline, config)
-            yield result
-            
-        except Exception as exc:
-            logger.error("PJSk Koishi 渲染失败: %s", str(exc))
-            yield helper.error(f"渲染失败：{str(exc)}")
+         """PJSk 绘制指令：支持 Koishi 风格选项的渲染命令。"""
+
+         helper = MessagingHelper(event)
+         raw_message = getattr(event, "message_str", "").strip()
+
+         try:
+             # Parse Koishi-style flags
+             options = parseKoishiFlags(raw_message)
+
+             # Apply defaults
+             defaults = {
+                 'text': None,
+                 'offset_x': None,
+                 'offset_y': None,
+                 'role': None,
+                 'font_size': None,
+                 'line_spacing': None,
+                 'curve': None,
+                 'default_font': False
+             }
+             options = applyDefaults(options, defaults)
+
+             # Create state from options
+             state = self._create_state_from_options(options)
+
+             # Save state
+             key = self._state_key(event)
+             self._save_state(key, state)
+
+             # Determine headline
+             if options['text']:
+                 headline = "🎨 已完成自定义渲染"
+             elif options['default_font']:
+                 headline = "🎨 已使用默认字体渲染"
+             else:
+                 headline = "🎨 已完成渲染"
+
+             logger.debug("PJSk Koishi 渲染：%s", headline)
+
+             # Render and respond
+             result = await self._render_and_respond(event, state, headline)
+             yield result
+
+         except Exception as exc:
+             logger.error("PJSk Koishi 渲染失败: %s", str(exc))
+             yield helper.error(f"渲染失败：{str(exc)}")
 
     @filter.command("pjsk")
     async def list_root(self, event: AstrMessageEvent):

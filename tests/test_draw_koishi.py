@@ -5,7 +5,6 @@ from unittest.mock import Mock, patch
 from main import PjskEmojiMaker
 from models import RenderState
 from utils import parseKoishiFlags, calculateOffsets, calculateFontSize
-from config import PJSkConfig
 from persistence import StatePersistence
 
 
@@ -19,9 +18,44 @@ class TestPJSkDrawKoishiCommand:
         return context
 
     @pytest.fixture
-    def plugin(self, mock_context):
-        """Create a plugin instance with mock context."""
-        return PjskEmojiMaker(mock_context)
+    def mock_config(self):
+        """Create a mock AstrBotConfig."""
+        config = Mock()
+        config.get = Mock(side_effect=lambda key, default=None: {
+            'adaptive_text_sizing': True,
+            'enable_markdown_flow': False,
+            'show_success_messages': True,
+            'mention_user_on_render': True,
+            'retract_delay_ms': 0,
+            'default_curve_intensity': 0.5,
+            'enable_text_shadow': True,
+            'persistence_enabled': True,
+            'state_ttl_hours': 24,
+        }.get(key, default))
+        return config
+
+    @pytest.fixture
+    def plugin(self, mock_context, mock_config):
+        """Create a plugin instance with mock context and config."""
+        return PjskEmojiMaker(mock_context, mock_config)
+
+    def _create_plugin_with_config(self, mock_context, **config_values):
+        """Helper to create a plugin with custom config values."""
+        config = Mock()
+        defaults = {
+            'adaptive_text_sizing': True,
+            'enable_markdown_flow': False,
+            'show_success_messages': True,
+            'mention_user_on_render': True,
+            'retract_delay_ms': 0,
+            'default_curve_intensity': 0.5,
+            'enable_text_shadow': True,
+            'persistence_enabled': True,
+            'state_ttl_hours': 24,
+        }
+        defaults.update(config_values)
+        config.get = Mock(side_effect=lambda key, default=None: defaults.get(key, default))
+        return PjskEmojiMaker(mock_context, config)
 
     @pytest.fixture
     def mock_event(self):
@@ -35,11 +69,10 @@ class TestPJSkDrawKoishiCommand:
         return event
 
     @pytest.mark.asyncio
-    async def test_draw_koishi_basic(self, plugin, mock_event):
+    async def test_draw_koishi_basic(self, mock_context, mock_event):
         """Test basic draw command without options."""
         # Mock config to disable adaptive sizing for predictable results
-        config = PJSkConfig(adaptive_text_sizing=False)
-        plugin._config_manager._config = config
+        plugin = self._create_plugin_with_config(mock_context, adaptive_text_sizing=False)
         
         mock_event.message_str = ""
         
@@ -68,17 +101,16 @@ class TestPJSkDrawKoishiCommand:
         assert state.text == "Custom text content"
 
     @pytest.mark.asyncio
-    async def test_draw_koishi_with_font_size(self, plugin, mock_event):
+    async def test_draw_koishi_with_font_size(self, mock_context, mock_event):
         """Test draw command with font size option."""
         # Mock config to disable adaptive sizing
-        config = PJSkConfig(adaptive_text_sizing=False)
-        plugin._config_manager._config = config
-        
+        plugin = self._create_plugin_with_config(mock_context, adaptive_text_sizing=False)
+
         mock_event.message_str = "-n Test -s 48"
-        
+
         result_generator = plugin.draw_koishi(mock_event)
         result = await result_generator.__anext__()
-        
+
         key = ("test", "test_session")
         state = plugin._state_manager.get(key)
         assert state is not None
@@ -183,19 +215,18 @@ class TestPJSkDrawKoishiCommand:
         assert state.role == "初音未来"
 
     @pytest.mark.asyncio
-    async def test_draw_koishi_adaptive_sizing(self, plugin, mock_event):
+    async def test_draw_koishi_adaptive_sizing(self, mock_context, mock_event):
         """Test adaptive text sizing functionality."""
         # Mock config to enable adaptive sizing
-        config = PJSkConfig(adaptive_text_sizing=True)
-        plugin._config_manager._config = config
-        
+        plugin = self._create_plugin_with_config(mock_context, adaptive_text_sizing=True)
+
         # Long text that should trigger adaptive sizing
         long_text = "This is a very long text that should cause adaptive font sizing to kick in and make the font smaller"
         mock_event.message_str = f'-n "{long_text}"'
-        
+
         result_generator = plugin.draw_koishi(mock_event)
         result = await result_generator.__anext__()
-        
+
         key = ("test", "test_session")
         state = plugin._state_manager.get(key)
         assert state is not None

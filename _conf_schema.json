@@ -1,0 +1,48 @@
+{
+  "adaptive_text_sizing": {
+    "description": "是否自动调整字号",
+    "type": "bool",
+    "default": true
+  },
+  "enable_markdown_flow": {
+    "description": "是否启用 Markdown 格式",
+    "type": "bool",
+    "default": false
+  },
+  "show_success_messages": {
+    "description": "是否显示成功消息",
+    "type": "bool",
+    "default": true
+  },
+  "mention_user_on_render": {
+    "description": "生成表情时是否提及用户 (@xxx)",
+    "type": "bool",
+    "default": true
+  },
+  "retract_delay_ms": {
+    "description": "消息删除延迟时间 (毫秒)",
+    "type": "int",
+    "default": 0,
+    "hint": "0 表示不删除消息"
+  },
+  "default_curve_intensity": {
+    "description": "默认曲线强度",
+    "type": "float",
+    "default": 0.5
+  },
+  "enable_text_shadow": {
+    "description": "是否启用文字阴影效果",
+    "type": "bool",
+    "default": true
+  },
+  "persistence_enabled": {
+    "description": "是否保存用户的表情制作状态",
+    "type": "bool",
+    "default": true
+  },
+  "state_ttl_hours": {
+    "description": "用户状态保存时长 (小时)",
+    "type": "int",
+    "default": 24
+  }
+}
