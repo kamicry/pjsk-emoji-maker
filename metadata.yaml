@@ -1,6 +1,5 @@
-name: pjsk-adjust
-display_name: PJSk Card Adjustment Suite with Koishi Draw
+name: pjsk-maker
 desc: PJSk card adjustment command suite with advanced Koishi-style draw command, text processing, adaptive sizing, and persistent state management.
 version: v1.2.0
-author: AstrBot Community
-repo: https://github.com/astrbot/plugin-template
+author: kamicry
+repo: https://github.com/kamicry/pjsk-emoji-maker
