@@ -5,15 +5,22 @@ A comprehensive plugin for [AstrBot](https://astrbot.app) providing PJSk card re
 ## Features
 
 - PJSk card rendering with state persistence
-- Text content adjustment with validation
+- Advanced Koishi-style draw command with flag parsing (-n, -x, -y, -r, -s, -l, -c, --daf)
+- Text content adjustment with validation and sanitization
+- Adaptive font sizing based on text length
 - Font size adjustment (absolute and relative)
 - Line spacing adjustment (absolute and relative)
-- Curve effect toggle
+- Curve effect toggle with intensity control
 - Position adjustment (up/down/left/right with custom steps)
 - Role/character selection with random option
+- Helper functions for text calculations (offsets, font size, dimensions)
+- Comprehensive configuration system with YAML persistence
+- Mock renderer with image generation
 - Comprehensive error handling and user guidance
 - Support for Chinese and English command aliases
 - Range validation and clamping for all parameters
+- State persistence with TTL support
+- Concurrent-safe state management
 
 ## Installation
 
@@ -47,6 +54,7 @@ A comprehensive plugin for [AstrBot](https://astrbot.app) providing PJSk card re
 | Command | Description | Usage Example |
 |---------|-------------|---------------|
 | `/pjsk.draw` | Initialize or refresh PJSk card state | `/pjsk.draw 卡面文本` |
+| `/pjsk.绘制` | Advanced rendering with Koishi-style options | `/pjsk.绘制 -n "文本" -s 48 -c` |
 | `/pjsk.调整` | Adjust card parameters and re-render | `/pjsk.调整 字号.大` |
 | `/helloworld` | Legacy greeting command | `/helloworld Hello!` |
 
@@ -63,6 +71,47 @@ Initialize a new PJSk card state or refresh the current configuration. Optionall
 ```
 
 **Response:** Displays current state summary with all parameters.
+
+#### `/pjsk.绘制` (Advanced Draw Command)
+
+Advanced rendering command supporting Koishi-style flags for precise control.
+
+**Usage:**
+```
+/pjsk.绘制                                   # Render with defaults
+/pjsk.绘制 -n "自定义文本内容"               # Set text content
+/pjsk.绘制 -n "文本" -s 48 -c               # Text + font size + curve
+/pjsk.绘制 -x 50 -y -20                     # Set position offsets
+/pjsk.绘制 -r 初音未来                      # Set character
+/pjsk.绘制 -r -r                            # Random character
+/pjsk.绘制 -l 1.8                          # Set line spacing
+/pjsk.绘制 --daf                            # Use default font
+```
+
+**Available Flags:**
+- `-n "text"`: Set text content (supports quotes for spaces)
+- `-x pixels`: Set horizontal offset (-240 to 240)
+- `-y pixels`: Set vertical offset (-240 to 240)  
+- `-r name`: Set character (use `-r -r` for random)
+- `-s size`: Set font size (18-84px)
+- `-l spacing`: Set line spacing (0.6-3.0)
+- `-c`: Enable curve effect
+- `--daf`: Use default font settings
+
+**Examples:**
+```
+/pjsk.绘制 -n "Hello World" -s 36 -c
+/pjsk.绘制 -n "多行文本\n第二行" -l 1.5 -x 20 -y -10
+/pjsk.绘制 -r miku -s 48 -c -x 30
+/pjsk.绘制 --daf -n "Default font rendering"
+```
+
+**Features:**
+- Adaptive text sizing (configurable)
+- Automatic offset calculation
+- Persistent state storage
+- Image generation with mock renderer
+- Configurable messaging options
 
 #### `/pjsk.调整` (Adjustment Commands)
 
@@ -136,25 +185,59 @@ Bot: Hello, JohnDoe, 你发了 test message!
 
 ## Configuration
 
-This plugin currently does not require any configuration. All functionality works out of the box.
+The plugin supports extensive configuration through `config/pjsk_config.yaml`. The configuration file is automatically created with default values on first run.
+
+### Current Configuration Options
+
+```yaml
+# Text processing options
+adaptive_text_sizing: true      # Automatically adjust font size to fit text
+enable_markdown_flow: false     # Enable markdown text processing
+
+# Messaging options  
+show_success_messages: true      # Include success messages in responses
+mention_user_on_render: false   # Mention user when rendering
+
+# Rendering options
+default_curve_intensity: 0.5    # Default curve effect intensity (0.0-1.0)
+enable_text_shadow: true        # Add shadow to rendered text
+default_emoji_set: "apple"      # Default emoji set for rendering
+
+# Persistence options
+persistence_enabled: true       # Enable state persistence
+state_ttl_hours: 24            # State expiration time in hours
+
+# Validation ranges
+font_size_min: 18               # Minimum font size
+font_size_max: 84               # Maximum font size
+font_size_step: 4               # Font size adjustment step
+
+line_spacing_min: 0.6           # Minimum line spacing
+line_spacing_max: 3.0           # Maximum line spacing
+line_spacing_step: 0.1          # Line spacing adjustment step
+
+offset_min: -240                # Minimum position offset
+offset_max: 240                 # Maximum position offset
+offset_step: 12                 # Position adjustment step
+
+max_text_length: 120             # Maximum allowed text length
+```
+
+### Configuration Management
+
+Configuration is managed automatically:
+- File created at: `config/pjsk_config.yaml`
+- Default values applied on first run
+- Hot reloading supported (restart required for changes)
+- Validation ensures all values stay within acceptable ranges
 
 ### Future Configuration Options
 
-Configuration can be added to `metadata.yaml` if needed:
-
-```yaml
-# Example configuration schema (not currently used)
-config:
-  greeting_prefix:
-    type: string
-    default: "Hello"
-    description: "Prefix for greeting messages"
-  
-  echo_enabled:
-    type: boolean
-    default: true
-    description: "Whether to echo back the user's message"
-```
+Additional configuration options can be added as needed. The system supports:
+- Boolean toggles for features
+- Numeric ranges with validation
+- String preferences
+- Nested configuration structures
 
 ## Development
 

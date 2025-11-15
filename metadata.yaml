@@ -1,6 +1,6 @@
 name: pjsk-adjust
-display_name: PJSk Card Adjustment Suite
-desc: PJSk card adjustment command suite with text, font size, line spacing, curve toggles, position, and role customization.
-version: v1.1.0
+display_name: PJSk Card Adjustment Suite with Koishi Draw
+desc: PJSk card adjustment command suite with advanced Koishi-style draw command, text processing, adaptive sizing, and persistent state management.
+version: v1.2.0
 author: AstrBot Community
 repo: https://github.com/astrbot/plugin-template
