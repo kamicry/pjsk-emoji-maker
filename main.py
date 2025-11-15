@@ -9,9 +9,9 @@ from astrbot.api.event import AstrMessageEvent, MessageEventResult, filter
 from astrbot.api.star import Context, Star, register
 from astrbot.api import AstrBotConfig
 
-from pjsk_emoji.models import RenderState
-from pjsk_emoji.persistence import StatePersistence
-from pjsk_emoji.utils import (
+from .pjsk_emoji.models import RenderState
+from .pjsk_emoji.persistence import StatePersistence
+from .pjsk_emoji.utils import (
     applyDefaults,
     calculateOffsets,
     calculateFontSize,
@@ -20,7 +20,7 @@ from pjsk_emoji.utils import (
     sanitizeText,
     validateCurveIntensity,
 )
-from pjsk_emoji.domain import (
+from .pjsk_emoji.domain import (
     get_character_name,
     get_character_image_buffer,
     get_character_list_image,
@@ -29,12 +29,12 @@ from pjsk_emoji.domain import (
     format_character_detail,
     CHARACTER_NAMES,
 )
-from pjsk_emoji.messaging import (
+from .pjsk_emoji.messaging import (
     MessageAdapter,
     create_adjustment_buttons,
     encode_koishi_button_text,
 )
-from pjsk_emoji.renderer import renderer_manager
+from .pjsk_emoji.renderer import renderer_manager
 
 
 class ConfigWrapper:
