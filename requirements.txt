@@ -1,0 +1,2 @@
+# Core dependencies (provided by AstrBot)
+# astrbot>=4.5.0

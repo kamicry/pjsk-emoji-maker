@@ -1,3 +1,7 @@
+# AstrBot Plugin - Assets and source files should be committed
+# This includes: metadata.yaml, *.py, *.md, docs/, tests/, etc.
+# Only build artifacts, caches, and environment files are ignored
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
