@@ -7,7 +7,7 @@ from typing import Dict, Iterable, List, Optional, Tuple
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, MessageEventResult, filter
 from astrbot.api.star import Context, Star, register
-from astrbot.api.plugin import AstrBotConfig
+from astrbot.api import AstrBotConfig
 
 from models import RenderState
 from persistence import StatePersistence
