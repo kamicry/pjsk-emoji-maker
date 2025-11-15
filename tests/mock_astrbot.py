@@ -16,19 +16,19 @@ class MockFilter:
 class MockLogger:
     """Mock logger"""
     @staticmethod
-    def info(msg):
+    def info(msg, *args, **kwargs):
         pass
     
     @staticmethod
-    def debug(msg):
+    def debug(msg, *args, **kwargs):
         pass
     
     @staticmethod
-    def warning(msg):
+    def warning(msg, *args, **kwargs):
         pass
     
     @staticmethod
-    def error(msg):
+    def error(msg, *args, **kwargs):
         pass
 
 

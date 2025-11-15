@@ -8,18 +8,20 @@ from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, MessageEventResult, filter
 from astrbot.api.star import Context, Star, register
 
+from config import ConfigManager, PJSkConfig
+from models import RenderState
+from persistence import StatePersistence
+from renderer import MockRenderer
+from utils import (
+    applyDefaults,
+    calculateOffsets,
+    calculateFontSize,
+    findLongestLine,
+    parseKoishiFlags,
+    sanitizeText,
+    validateCurveIntensity,
+)
 
-@dataclass
-class RenderState:
-    """Runtime configuration for a user's PJSk card rendering."""
-
-    text: str
-    font_size: int
-    line_spacing: float
-    curve_enabled: bool
-    offset_x: int
-    offset_y: int
-    role: str
 
 
 class StateManager:
@@ -170,6 +172,9 @@ class MyPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
         self._state_manager = StateManager()
+        self._persistence = StatePersistence()
+        self._config_manager = ConfigManager()
+        self._renderer = MockRenderer()
         self._random = random.Random()
         self._command_lookup = self._build_alias_lookup(self.COMMAND_ALIASES)
         self._direction_lookup = self._build_alias_lookup(self.DIRECTION_ALIASES)
@@ -208,8 +213,16 @@ class MyPlugin(Star):
     def _require_state(self, event: AstrMessageEvent) -> Tuple[Tuple[str, str], RenderState]:
         key = self._state_key(event)
         state = self._state_manager.get(key)
+        
+        # Try to load from persistence if not in memory
         if state is None:
-            raise MissingStateError("未找到历史渲染，请先执行 /pjsk.draw。")
+            config = self._config_manager.get()
+            state = self._persistence.get_state(key[0], key[1], config.state_ttl_hours)
+            if state:
+                self._state_manager.set(key, state)
+        
+        if state is None:
+            raise MissingStateError("未找到历史渲染，请先执行 /pjsk.draw 或 /pjsk.绘制。")
         return key, state
 
     def _extract_first_token(self, message: str) -> Tuple[str, str]:
@@ -293,6 +306,122 @@ class MyPlugin(Star):
         if not candidates:
             candidates = list(self._role_names)
         return self._random.choice(candidates)
+
+    def _save_state(self, key: Tuple[str, str], state: RenderState) -> None:
+        """Save state to both memory and persistence."""
+        self._state_manager.set(key, state)
+        config = self._config_manager.get()
+        if config.persistence_enabled:
+            self._persistence.set_state(key[0], key[1], state)
+
+    def _create_state_from_options(self, options: dict, config: PJSkConfig) -> RenderState:
+        """Create RenderState from parsed options."""
+        text = options.get('text') or self.DEFAULT_TEXT
+        if config.adaptive_text_sizing and not options.get('font_size'):
+            font_size = calculateFontSize(text, min_size=config.font_size_min, max_size=config.font_size_max)
+        else:
+            font_size = options.get('font_size') or self.DEFAULT_FONT_SIZE
+        
+        line_spacing = options.get('line_spacing') or self.DEFAULT_LINE_SPACING
+        curve_enabled = options.get('curve') or False
+        
+        # Calculate offsets if not provided
+        if options.get('offset_x') is not None or options.get('offset_y') is not None:
+            offset_x = options.get('offset_x', 0)
+            offset_y = options.get('offset_y', 0)
+        else:
+            offset_x, offset_y = calculateOffsets(text, font_size, line_spacing)
+        
+        # Resolve role
+        role = options.get('role')
+        if role == '-r':
+            role = self._pick_random_role(self.DEFAULT_ROLE)
+        elif role:
+            resolved = self._resolve_role(role)
+            role = resolved or self.DEFAULT_ROLE
+        else:
+            role = self.DEFAULT_ROLE
+        
+        # Clamp values to config ranges
+        font_size = int(self._clamp(font_size, config.font_size_min, config.font_size_max))
+        line_spacing = round(self._clamp(line_spacing, config.line_spacing_min, config.line_spacing_max), 2)
+        offset_x = int(self._clamp(offset_x, config.offset_min, config.offset_max))
+        offset_y = int(self._clamp(offset_y, config.offset_min, config.offset_max))
+        
+        # Sanitize text
+        text = sanitizeText(text, config.max_text_length)
+        
+        return RenderState(
+            text=text,
+            font_size=font_size,
+            line_spacing=line_spacing,
+            curve_enabled=curve_enabled,
+            offset_x=offset_x,
+            offset_y=offset_y,
+            role=role,
+        )
+
+    async def _render_and_respond(
+        self, 
+        event: AstrMessageEvent, 
+        state: RenderState, 
+        headline: str,
+        config: PJSkConfig
+    ) -> MessageEventResult:
+        """Render the card and send response."""
+        try:
+            # Generate the image
+            curve_intensity = validateCurveIntensity(config.default_curve_intensity)
+            image_bytes = self._renderer.render_card(
+                text=state.text,
+                font_size=state.font_size,
+                line_spacing=state.line_spacing,
+                curve_enabled=state.curve_enabled,
+                offset_x=state.offset_x,
+                offset_y=state.offset_y,
+                role=state.role,
+                curve_intensity=curve_intensity,
+                enable_shadow=config.enable_text_shadow,
+                emoji_set=config.default_emoji_set,
+            )
+            
+            # Create response
+            helper = MessagingHelper(event)
+            
+            # Build message components
+            messages = []
+            
+            # Add mention if enabled
+            if config.mention_user_on_render:
+                try:
+                    sender_name = event.get_sender_name()
+                    messages.append(f"@{sender_name} ")
+                except Exception:
+                    pass
+            
+            # Add success message if enabled
+            if config.show_success_messages:
+                messages.append(f"✨ {headline}")
+                messages.append("")
+                messages.extend(helper._state_lines(state))
+            
+            # Convert image bytes to base64 for sending
+            import base64
+            image_b64 = base64.b64encode(image_bytes).decode('utf-8')
+            
+            # Return image result with optional text
+            if messages:
+                text_result = "\n".join(messages)
+                # In a real implementation, this would send both text and image
+                # For now, we'll return the text result
+                return event.plain_result(text_result + f"\n\n[Image: {len(image_bytes)} bytes]")
+            else:
+                return event.plain_result(f"[Image: {len(image_bytes)} bytes]")
+                
+        except Exception as e:
+            logger.error("PJSk rendering failed: %s", str(e))
+            helper = MessagingHelper(event)
+            return helper.error(f"渲染失败：{str(e)}")
 
     async def _render_via_draw(self, event: AstrMessageEvent, headline: str) -> MessageEventResult:
         original_message = getattr(event, "message_str", "")
@@ -500,7 +629,7 @@ class MyPlugin(Star):
                 offset_y=0,
                 role=self.DEFAULT_ROLE,
             )
-            self._state_manager.set(key, state)
+            self._save_state(key, state)
             created = True
         elif message:
             state.text = message
@@ -530,6 +659,56 @@ class MyPlugin(Star):
 
         result = await self._render_via_draw(event, headline)
         yield result
+
+    @filter.command("pjsk.绘制")
+    async def draw_koishi(self, event: AstrMessageEvent):
+        """PJSk 绘制指令：支持 Koishi 风格选项的渲染命令。"""
+        
+        helper = MessagingHelper(event)
+        config = self._config_manager.get()
+        raw_message = getattr(event, "message_str", "").strip()
+        
+        try:
+            # Parse Koishi-style flags
+            options = parseKoishiFlags(raw_message)
+            
+            # Apply defaults
+            defaults = {
+                'text': None,
+                'offset_x': None,
+                'offset_y': None,
+                'role': None,
+                'font_size': None,
+                'line_spacing': None,
+                'curve': None,
+                'default_font': False
+            }
+            options = applyDefaults(options, defaults)
+            
+            # Create state from options
+            state = self._create_state_from_options(options, config)
+            
+            # Save state
+            key = self._state_key(event)
+            self._save_state(key, state)
+            
+            # Determine headline
+            if options['text']:
+                headline = "🎨 已完成自定义渲染"
+            elif options['default_font']:
+                headline = "🎨 已使用默认字体渲染"
+            else:
+                headline = "🎨 已完成渲染"
+            
+            logger.debug("PJSk Koishi 渲染：%s", headline)
+            
+            # Render and respond
+            result = await self._render_and_respond(event, state, headline, config)
+            yield result
+            
+        except Exception as exc:
+            logger.error("PJSk Koishi 渲染失败: %s", str(exc))
+            yield helper.error(f"渲染失败：{str(exc)}")
 
     @filter.command("helloworld")
     async def helloworld(self, event: AstrMessageEvent):

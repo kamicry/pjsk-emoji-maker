@@ -100,7 +100,7 @@ class TestAdjustCommandErrors:
         """Test that adjust command shows error when no state exists."""
         mock_event = Mock()
         mock_event.platform = "test"
-        mock_event.session_id = "test_session"
+        mock_event.session_id = "unique_session_no_state"  # Use unique session
         mock_event.message_str = "字号 48"
         mock_event.plain_result = Mock(return_value="error result")
 
