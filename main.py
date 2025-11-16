@@ -963,7 +963,7 @@ class PjskEmojiMaker(Star):
          """PJSk 绘制指令：支持 Koishi 风格选项的渲染命令。"""
 
          helper = MessagingHelper(event)
-         raw_message = getattr(event, "message_str", "").strip()
+         raw_message = (getattr(event, "message_str", "") or "").strip()
 
          try:
              # Parse Koishi-style flags
@@ -1040,7 +1040,7 @@ class PjskEmojiMaker(Star):
     @filter.command("pjsk.列表")
     async def list_guide(self, event: AstrMessageEvent):
         """PJSk 列表指令：主列表流程。"""
-        raw_message = getattr(event, "message_str", "").strip()
+        raw_message = (getattr(event, "message_str", "") or "").strip()
         
         if not raw_message:
             lines = [
@@ -1106,7 +1106,7 @@ class PjskEmojiMaker(Star):
     @filter.command("pjsk.列表.展开指定角色")
     async def list_expand_character(self, event: AstrMessageEvent):
         """PJSk 列表：显示特定角色的详情。"""
-        raw_message = getattr(event, "message_str", "").strip()
+        raw_message = (getattr(event, "message_str", "") or "").strip()
         
         if not raw_message:
             yield event.plain_result(
@@ -1130,11 +1130,17 @@ class PjskEmojiMaker(Star):
     async def handle_character_selection(self, event: AstrMessageEvent):
         """处理角色选择输入。"""
         platform, user_id = self._get_platform_and_user(event)
-        raw_message = getattr(event, "message_str", "").strip()
+        
+        # Get parameter - handle both string and None cases
+        raw_message = (getattr(event, "message_str", "") or "").strip()
+        
+        # Log for debugging
+        logger.debug(f"pjsk.选择 received parameter: '{raw_message}'")
 
         # Validate character selection
         selected_character = self._validate_character_selection(raw_message)
         if not selected_character:
+            logger.debug(f"Validation failed for input: '{raw_message}'")
             yield event.plain_result("❌ 输入无效。请输入 1-8 的数字或角色名称（如：miku, ichika）。\n\n💡 提示：发送 /pjsk.列表.全部 查看可用角色")
             return
 
@@ -1175,7 +1181,12 @@ class PjskEmojiMaker(Star):
     async def handle_text_input(self, event: AstrMessageEvent):
         """处理文字输入并生成表情包。"""
         platform, user_id = self._get_platform_and_user(event)
-        raw_message = getattr(event, "message_str", "").strip()
+        
+        # Get parameter - handle both string and None cases
+        raw_message = (getattr(event, "message_str", "") or "").strip()
+        
+        # Log for debugging
+        logger.debug(f"pjsk.输入文字 received parameter: '{raw_message}'")
         
         # Get existing session
         session = session_manager.get_session(platform, user_id)
