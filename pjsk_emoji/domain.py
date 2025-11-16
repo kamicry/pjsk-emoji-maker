@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import io
+import json
 import logging
+import os
 from typing import Dict, Iterable, List, Optional, Tuple
 
 try:
@@ -33,6 +35,65 @@ CHARACTER_GROUPS: Dict[str, List[str]] = {
 }
 
 CHARACTER_NAMES = list(CHARACTERS.keys())
+
+
+def load_characters_data() -> Dict:
+    """Load characters data from JSON file."""
+    try:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        assets_dir = os.path.join(current_dir, 'assets')
+        characters_file = os.path.join(assets_dir, 'characters.json')
+        
+        with open(characters_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        return data
+    except Exception as e:
+        logger.error(f"Failed to load characters data: {e}")
+        return {}
+
+
+def get_character_thumbnail_path(character_name: str) -> Optional[str]:
+    """Get thumbnail path for a character."""
+    try:
+        data = load_characters_data()
+        characters = data.get('characters', {})
+        
+        for name, info in characters.items():
+            if name == character_name:
+                thumbnail_path = info.get('list_thumbnail_path')
+                if thumbnail_path:
+                    current_dir = os.path.dirname(os.path.abspath(__file__))
+                    assets_dir = os.path.join(current_dir, 'assets')
+                    return os.path.join(assets_dir, thumbnail_path)
+        
+        return None
+    except Exception as e:
+        logger.error(f"Failed to get thumbnail path for {character_name}: {e}")
+        return None
+
+
+def get_all_character_thumbnails() -> List[Tuple[str, str]]:
+    """Get all character thumbnails as (name, path) tuples."""
+    try:
+        data = load_characters_data()
+        characters = data.get('characters', {})
+        thumbnails = []
+        
+        for name, info in characters.items():
+            thumbnail_path = info.get('list_thumbnail_path')
+            if thumbnail_path:
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                assets_dir = os.path.join(current_dir, 'assets')
+                full_path = os.path.join(assets_dir, thumbnail_path)
+                
+                if os.path.exists(full_path):
+                    thumbnails.append((name, full_path))
+        
+        return thumbnails
+    except Exception as e:
+        logger.error(f"Failed to get character thumbnails: {e}")
+        return []
 
 
 def build_character_lookup(characters: Dict[str, Iterable[str]]) -> Dict[str, str]:
@@ -179,6 +240,129 @@ async def get_character_list_image(
     except Exception as e:
         logger.error("Failed to generate list image: %s", str(e))
         raise
+
+
+def create_character_selection_grid() -> bytes:
+    """Create a grid image with character thumbnails for selection.
+    
+    Returns:
+        PNG image bytes with character thumbnails arranged in a grid
+    """
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+        
+        # Get all character thumbnails
+        thumbnails = get_all_character_thumbnails()
+        
+        if not thumbnails:
+            # Fallback: create a simple text image
+            return _create_text_fallback_image()
+        
+        # Grid layout: 3 columns, 3 rows (8 characters + 1 empty)
+        cols = 3
+        rows = 3
+        thumbnail_size = 100
+        padding = 10
+        label_height = 30
+        
+        grid_width = cols * (thumbnail_size + padding) + padding
+        grid_height = rows * (thumbnail_size + padding + label_height) + padding
+        
+        # Create white background
+        grid_image = Image.new('RGB', (grid_width, grid_height), 'white')
+        draw = ImageDraw.Draw(grid_image)
+        
+        # Try to load a font
+        try:
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
+        except:
+            font = ImageFont.load_default()
+        
+        # Place thumbnails in grid
+        for idx, (name, path) in enumerate(thumbnails):
+            if idx >= 8:  # Only show first 8 characters
+                break
+            
+            row = idx // cols
+            col = idx % cols
+            
+            x = padding + col * (thumbnail_size + padding)
+            y = padding + row * (thumbnail_size + padding + label_height)
+            
+            # Load and resize thumbnail
+            try:
+                thumbnail = Image.open(path)
+                thumbnail = thumbnail.resize((thumbnail_size, thumbnail_size), Image.Resampling.LANCZOS)
+                grid_image.paste(thumbnail, (x, y))
+            except Exception as e:
+                logger.error(f"Failed to load thumbnail {path}: {e}")
+                # Draw placeholder
+                draw.rectangle([x, y, x + thumbnail_size, y + thumbnail_size], fill='lightgray')
+                draw.text((x + thumbnail_size//2, y + thumbnail_size//2), f"{idx+1}", 
+                         fill='black', font=font, anchor='mm')
+            
+            # Add number label
+            label_text = f"{idx + 1}. {name}"
+            label_y = y + thumbnail_size + 5
+            draw.text((x + thumbnail_size//2, label_y), label_text, 
+                     fill='black', font=font, anchor='mm')
+        
+        # Convert to bytes
+        img_bytes = io.BytesIO()
+        grid_image.save(img_bytes, format='PNG', optimize=True)
+        img_bytes.seek(0)
+        
+        return img_bytes.getvalue()
+        
+    except Exception as e:
+        logger.error(f"Failed to create character selection grid: {e}")
+        return _create_text_fallback_image()
+
+
+def _create_text_fallback_image() -> bytes:
+    """Create a text fallback image when thumbnails are not available."""
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+        
+        # Create a simple text image
+        width, height = 400, 300
+        image = Image.new('RGB', (width, height), 'white')
+        draw = ImageDraw.Draw(image)
+        
+        try:
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 20)
+        except:
+            font = ImageFont.load_default()
+        
+        text_lines = [
+            "角色选择列表",
+            "",
+            "1. 初音未来",
+            "2. 星乃一歌", 
+            "3. 天马咲希",
+            "4. 望月穗波",
+            "5. 日野森志步",
+            "6. 东云彰人",
+            "7. 青柳冬弥",
+            "8. 小豆泽心羽"
+        ]
+        
+        y_offset = 20
+        for line in text_lines:
+            draw.text((20, y_offset), line, fill='black', font=font)
+            y_offset += 25
+        
+        # Convert to bytes
+        img_bytes = io.BytesIO()
+        image.save(img_bytes, format='PNG', optimize=True)
+        img_bytes.seek(0)
+        
+        return img_bytes.getvalue()
+        
+    except Exception as e:
+        logger.error(f"Failed to create fallback image: {e}")
+        # Return empty PNG as last resort
+        return b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xdb\x00\x00\x00\x00IEND\xaeB`\x82'
 
 
 def format_character_detail(character_name: str) -> str:
