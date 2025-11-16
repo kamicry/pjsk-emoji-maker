@@ -524,14 +524,23 @@ class PjskEmojiMaker(Star):
             return event.plain_result(text_list)
 
     def _validate_character_selection(self, user_input: str) -> Optional[str]:
-        """Validate user input for character selection."""
+        """Validate user input for character selection (supports numeric index or character ID/name)."""
+        stripped_input = user_input.strip()
+        
+        # Try numeric selection first (1-8 for interactive flow)
         try:
-            selection = int(user_input.strip())
+            selection = int(stripped_input)
             if 1 <= selection <= len(CHARACTER_NAMES):
                 return CHARACTER_NAMES[selection - 1]
-            return None
-        except (ValueError, TypeError):
-            return None
+        except ValueError:
+            pass
+        
+        # Try to resolve by character name or alias using the domain function
+        resolved_name = get_character_name(stripped_input)
+        if resolved_name and resolved_name in CHARACTER_NAMES:
+            return resolved_name
+        
+        return None
 
     async def _handle_character_selection_timeout(self, platform: str, user_id: str) -> None:
         """Handle timeout for character selection."""
@@ -1122,37 +1131,45 @@ class PjskEmojiMaker(Star):
         """处理角色选择输入。"""
         platform, user_id = self._get_platform_and_user(event)
         raw_message = getattr(event, "message_str", "").strip()
-        
-        # Get existing session
-        session = session_manager.get_session(platform, user_id)
-        if not session:
-            yield event.plain_result("❌ 没有进行中的角色选择会话。请先发送 /pjsk.列表.全部 开始选择。")
-            return
-        
-        if session.state != SessionState.WAITING_CHARACTER_SELECTION:
-            yield event.plain_result("❌ 当前会话状态不正确。请先发送 /pjsk.列表.全部 开始选择。")
-            return
-        
+
         # Validate character selection
         selected_character = self._validate_character_selection(raw_message)
         if not selected_character:
-            yield event.plain_result("❌ 输入无效。请输入 1-8 的数字选择角色。\n\n💡 提示：发送 /pjsk.列表.全部 重新查看角色列表")
+            yield event.plain_result("❌ 输入无效。请输入 1-8 的数字或角色名称（如：miku, ichika）。\n\n💡 提示：发送 /pjsk.列表.全部 查看可用角色")
             return
-        
-        # Update session with selected character
-        session_manager.update_session(
-            platform=platform,
-            user_id=user_id,
-            state=SessionState.WAITING_TEXT_INPUT,
-            selected_character=selected_character,
-            timeout_seconds=60  # Extend timeout for text input
-        )
-        
-        logger.debug(f"User {platform}:{user_id} selected character: {selected_character}")
-        
-        # Prompt for text input
-        prompt_text = f"✅ 已选择「{selected_character}」，请输入要添加的文字：\n\n⏰ 60 秒内有效"
-        yield event.plain_result(prompt_text)
+
+        # Get existing session (if any)
+        session = session_manager.get_session(platform, user_id)
+
+        # If there's an active character selection session, update it
+        if session and session.state == SessionState.WAITING_CHARACTER_SELECTION:
+            session_manager.update_session(
+                platform=platform,
+                user_id=user_id,
+                state=SessionState.WAITING_TEXT_INPUT,
+                selected_character=selected_character,
+                timeout_seconds=60  # Extend timeout for text input
+            )
+            logger.debug(f"User {platform}:{user_id} selected character: {selected_character}")
+            prompt_text = f"✅ 已选择「{selected_character}」，请输入要添加的文字：\n\n⏰ 60 秒内有效"
+            yield event.plain_result(prompt_text)
+        else:
+            # No session or wrong state - create a new session for text input
+            new_session = session_manager.create_session(
+                platform=platform,
+                user_id=user_id,
+                initial_state=SessionState.WAITING_TEXT_INPUT,
+                timeout_seconds=60
+            )
+            # Update the session with selected character
+            session_manager.update_session(
+                platform=platform,
+                user_id=user_id,
+                selected_character=selected_character
+            )
+            logger.debug(f"User {platform}:{user_id} selected character: {selected_character} (direct mode)")
+            prompt_text = f"✅ 已选择「{selected_character}」，请输入要添加的文字：\n\n⏰ 60 秒内有效"
+            yield event.plain_result(prompt_text)
 
     @filter.command("pjsk.输入文字")
     async def handle_text_input(self, event: AstrMessageEvent):

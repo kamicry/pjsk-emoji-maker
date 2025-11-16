@@ -209,3 +209,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Font files (large and platform-specific, installed via setup script)
+pjsk_emoji/assets/fonts/*.ttc
+pjsk_emoji/assets/fonts/*.ttf
+pjsk_emoji/assets/fonts/*.otf

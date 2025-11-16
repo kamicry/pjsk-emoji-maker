@@ -61,11 +61,23 @@ if command -v apt-get &> /dev/null; then
         libgbm1 \
         libcairo2 \
         libpango-1.0-0 \
-        libasound2t64
+        libasound2t64 \
+        fonts-noto-cjk
     echo "✅ System dependencies installed"
 else
     echo "⚠️ Not on Ubuntu/Debian. Please install system dependencies manually."
     echo "See docs/RENDERER_SETUP.md for details."
+fi
+
+# Setup fonts for rendering
+echo "🔤 Setting up fonts..."
+mkdir -p pjsk_emoji/assets/fonts
+if [ -f "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc" ]; then
+    cp /usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc pjsk_emoji/assets/fonts/
+    cp /usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc pjsk_emoji/assets/fonts/
+    echo "✅ Fonts installed successfully"
+else
+    echo "⚠️ Noto Sans CJK fonts not found. Using system fonts instead."
 fi
 
 # Generate placeholder images if they don't exist
