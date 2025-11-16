@@ -505,6 +505,12 @@ class PjskEmojiMaker(Star):
         headline: str
     ) -> MessageEventResult:
         """Render the card and send response."""
+        import tempfile
+        import os
+        import asyncio
+
+        helper = MessagingHelper(event)
+
         try:
             # Generate the image
             curve_intensity = validateCurveIntensity(self.config.default_curve_intensity)
@@ -520,39 +526,95 @@ class PjskEmojiMaker(Star):
                 enable_shadow=self.config.enable_text_shadow,
                 emoji_set=self.config.default_emoji_set,
             )
-            
-            # Create response
-            helper = MessagingHelper(event)
-            
-            # Build message components
-            messages = []
-            
-            # Add mention if enabled
+
+            # Prepare mention text separately (may be replaced by component later)
+            mention_text: Optional[str] = None
             if self.config.mention_user_on_render:
                 try:
                     sender_name = event.get_sender_name()
-                    messages.append(f"@{sender_name} ")
+                    if sender_name:
+                        mention_text = f"@{sender_name}"
                 except Exception:
-                    pass
-            
-            # Add success message if enabled
+                    mention_text = None
+
+            # Build success message lines
+            text_lines: List[str] = []
             if self.config.show_success_messages:
-                messages.append(f"✨ {headline}")
-                messages.append("")
-                messages.extend(helper._state_lines(state))
+                text_lines.append(f"✨ {headline}")
+                text_lines.append("")
+                text_lines.extend(helper._state_lines(state))
             
-            # Convert image bytes to base64 for sending
-            import base64
-            image_b64 = base64.b64encode(image_bytes).decode('utf-8')
+            # Save image to temporary file
+            with tempfile.NamedTemporaryFile(mode='wb', suffix='.png', delete=False) as tmp_file:
+                tmp_file.write(image_bytes)
+                tmp_path = tmp_file.name
             
-            # Return image result with optional text
-            if messages:
-                text_result = "\n".join(messages)
-                # In a real implementation, this would send both text and image
-                # For now, we'll return the text result
-                return event.plain_result(text_result + f"\n\n[Image: {len(image_bytes)} bytes]")
-            else:
-                return event.plain_result(f"[Image: {len(image_bytes)} bytes]")
+            # Schedule cleanup task for later
+            async def cleanup_temp_file():
+                await asyncio.sleep(5)  # Wait 5 seconds for the image to be sent
+                try:
+                    if os.path.exists(tmp_path):
+                        os.unlink(tmp_path)
+                except Exception:
+                    pass  # Ignore cleanup errors
+            
+            asyncio.create_task(cleanup_temp_file())
+            
+            # Try to send as message chain with Comp module (most compatible)
+            try:
+                from astrbot.api.message import Comp
+                chain = []
+                
+                # Add mention component if configured
+                if mention_text and self.config.mention_user_on_render:
+                    mention_added = False
+                    try:
+                        sender_id = event.get_sender_id() if hasattr(event, 'get_sender_id') else None
+                        if sender_id:
+                            chain.append(Comp.At(qq=sender_id))
+                            mention_added = True
+                    except Exception:
+                        logger.debug("Failed to build mention component", exc_info=True)
+                    if not mention_added:
+                        chain.append(Comp.Plain(mention_text))
+                
+                # Add text content
+                if text_lines:
+                    text_content = "\n".join(text_lines)
+                    chain.append(Comp.Plain(text_content))
+                
+                # Add image
+                chain.append(Comp.Image.fromFileSystem(tmp_path))
+                
+                # Use chain_result if available
+                if hasattr(event, 'chain_result') and callable(getattr(event, 'chain_result')):
+                    return event.chain_result(chain)
+                else:
+                    # Fallback to plain_result if chain_result not available
+                    logger.warning("chain_result not available, using plain_result fallback")
+                    fallback_parts = []
+                    if mention_text:
+                        fallback_parts.append(mention_text)
+                    fallback_parts.extend(text_lines)
+                    fallback_parts.append(f"[图片: {tmp_path}]")
+                    return event.plain_result("\n".join(fallback_parts))
+                    
+            except (ImportError, AttributeError) as e:
+                logger.debug("Comp module not available: %s, trying image_result", str(e))
+                
+                # Try to use image_result if available
+                if hasattr(event, 'image_result') and callable(getattr(event, 'image_result')):
+                    return event.image_result(tmp_path)
+                
+                # Last resort fallback
+                else:
+                    logger.warning("Neither Comp nor image_result available, using plain_result")
+                    fallback_parts = []
+                    if mention_text:
+                        fallback_parts.append(mention_text)
+                    fallback_parts.extend(text_lines)
+                    fallback_parts.append(f"[图片: {tmp_path}]")
+                    return event.plain_result("\n".join(fallback_parts))
                 
         except Exception as e:
             logger.error("PJSk rendering failed: %s", str(e))
@@ -749,7 +811,6 @@ class PjskEmojiMaker(Star):
     async def draw(self, event: AstrMessageEvent):
         """PJSk 渲染指令：初始化或刷新当前配置。"""
 
-        helper = MessagingHelper(event)
         key = self._state_key(event)
         state = self._state_manager.get(key)
         message = getattr(event, "message_str", "").strip()
@@ -769,10 +830,14 @@ class PjskEmojiMaker(Star):
             created = True
         elif message:
             state.text = message
+            self._save_state(key, state)
 
         headline = self._pending_headline or ("🎨 已完成初始渲染" if created else "🎨 已重新渲染")
         logger.debug("PJSk 渲染：%s", headline)
-        yield helper.summary(state, headline)
+        
+        # Render the image and send response
+        result = await self._render_and_respond(event, state, headline)
+        yield result
 
     @filter.command("pjsk.调整")
     async def adjust(self, event: AstrMessageEvent):
