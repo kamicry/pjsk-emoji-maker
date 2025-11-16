@@ -11,6 +11,7 @@ from astrbot.api import AstrBotConfig
 
 from .pjsk_emoji.models import RenderState
 from .pjsk_emoji.persistence import StatePersistence
+from .pjsk_emoji.session import session_manager, SessionState
 from .pjsk_emoji.utils import (
     applyDefaults,
     calculateOffsets,
@@ -24,6 +25,7 @@ from .pjsk_emoji.domain import (
     get_character_name,
     get_character_image_buffer,
     get_character_list_image,
+    create_character_selection_grid,
     format_character_list,
     format_character_groups,
     format_character_detail,
@@ -320,6 +322,9 @@ class PjskEmojiMaker(Star):
 
     async def terminate(self):
         """插件卸载时的清理逻辑。"""
+        # Stop session manager cleanup task
+        await session_manager.stop_cleanup_task()
+        
         # Close the renderer
         await renderer_manager.close()
 
@@ -450,6 +455,89 @@ class PjskEmojiMaker(Star):
         self._state_manager.set(key, state)
         if self.config.persistence_enabled:
             self._persistence.set_state(key[0], key[1], state)
+
+    def _get_platform_and_user(self, event: AstrMessageEvent) -> Tuple[str, str]:
+        """Extract platform and user ID from event."""
+        platform = getattr(event, "platform", "unknown") or "unknown"
+        if not isinstance(platform, str):
+            platform = str(platform) or "unknown"
+        
+        user_id = "unknown"
+        if hasattr(event, "get_sender_id") and callable(getattr(event, "get_sender_id")):
+            try:
+                user_id = getattr(event, "get_sender_id")() or "unknown"
+            except Exception:
+                user_id = "unknown"
+        
+        return platform, user_id
+
+    def _send_character_selection_grid(self, event: AstrMessageEvent) -> MessageEventResult:
+        """Send character selection grid to user."""
+        import tempfile
+        import os
+        import asyncio
+        
+        try:
+            # Generate the grid image
+            grid_bytes = create_character_selection_grid()
+            
+            # Save to temporary file
+            with tempfile.NamedTemporaryFile(mode='wb', suffix='.png', delete=False) as tmp_file:
+                tmp_file.write(grid_bytes)
+                tmp_path = tmp_file.name
+            
+            # Schedule cleanup
+            async def cleanup_temp_file():
+                await asyncio.sleep(5)
+                try:
+                    if os.path.exists(tmp_path):
+                        os.unlink(tmp_path)
+                except Exception:
+                    pass
+            
+            asyncio.create_task(cleanup_temp_file())
+            
+            # Send image with instructions
+            try:
+                from astrbot.api.message import Comp
+                chain = [
+                    Comp.Plain("📋 请选择角色（输入数字 1-8）：\n"),
+                    Comp.Image.fromFileSystem(tmp_path),
+                    Comp.Plain("\n⏰ 30 秒内有效，输入数字选择角色")
+                ]
+                
+                if hasattr(event, 'chain_result') and callable(getattr(event, 'chain_result')):
+                    return event.chain_result(chain)
+                else:
+                    fallback_text = "📋 请选择角色（输入数字 1-8）：\n[图片: 角色选择列表]\n⏰ 30 秒内有效，输入数字选择角色"
+                    return event.plain_result(fallback_text)
+                    
+            except (ImportError, AttributeError) as e:
+                logger.debug("Comp module not available for grid: %s", str(e))
+                fallback_text = "📋 请选择角色（输入数字 1-8）：\n[图片: 角色选择列表]\n⏰ 30 秒内有效，输入数字选择角色"
+                return event.plain_result(fallback_text)
+                
+        except Exception as e:
+            logger.error("Failed to send character selection grid: %s", str(e))
+            # Fallback to text list
+            text_list = "📋 请选择角色（输入数字 1-8）：\n\n" + format_character_list() + "\n\n⏰ 30 秒内有效，输入数字选择角色"
+            return event.plain_result(text_list)
+
+    def _validate_character_selection(self, user_input: str) -> Optional[str]:
+        """Validate user input for character selection."""
+        try:
+            selection = int(user_input.strip())
+            if 1 <= selection <= len(CHARACTER_NAMES):
+                return CHARACTER_NAMES[selection - 1]
+            return None
+        except (ValueError, TypeError):
+            return None
+
+    async def _handle_character_selection_timeout(self, platform: str, user_id: str) -> None:
+        """Handle timeout for character selection."""
+        # This would be called by the session manager when timeout occurs
+        # For now, we'll log it - in a real implementation, you might want to send a message
+        logger.debug(f"Character selection timeout for {platform}:{user_id}")
 
     def _create_state_from_options(self, options: dict) -> RenderState:
         """Create RenderState from parsed options."""
@@ -916,14 +1004,27 @@ class PjskEmojiMaker(Star):
         lines = [
             "🎨 Project SEKAI 表情包制作工具",
             "",
-            "快速开始：",
-            "• /pjsk.draw 或 /pjsk.绘制 ─ 创建或刷新表情包",
-            "• /pjsk.列表 ─ 查看所有角色",
+            "🚀 快速开始（推荐）：",
+            "• /pjsk.列表.全部 ─ 交互式选择角色制作表情包",
             "",
-            "调整选项：",
+            "⚡ 传统方式：",
+            "• /pjsk.draw [文字] ─ 直接创建表情包",
+            "• /pjsk.绘制 -n '文字' ─ 高级选项创建",
+            "",
+            "📋 查看选项：",
+            "• /pjsk.列表 ─ 查看角色列表和交互式选项",
             "• /pjsk.调整 ─ 查看所有调整指令",
             "",
-            "更多帮助：发送相应指令即可获取详细说明。",
+            "🔧 会话控制：",
+            "• /pjsk.选择 <数字> ─ 交互式选择角色",
+            "• /pjsk.输入文字 <内容> ─ 交互式输入文字",
+            "• /pjsk.取消 ─ 取消当前会话",
+            "",
+            "💡 交互式制作流程：",
+            "1. 发送 /pjsk.列表.全部 查看角色网格",
+            "2. 输入数字 1-8 选择角色", 
+            "3. 输入要添加的文字",
+            "4. 自动生成表情包",
         ]
         yield event.plain_result("\n".join(lines))
 
@@ -936,10 +1037,23 @@ class PjskEmojiMaker(Star):
             lines = [
                 "📋 角色列表查看",
                 "",
-                "选择查看方式：",
-                "• /pjsk.列表.全部 ─ 查看所有角色",
+                "🎨 交互式制作（推荐）：",
+                "• /pjsk.列表.全部 ─ 开始交互式角色选择和表情包制作",
+                "",
+                "📖 查看选项：",
                 "• /pjsk.列表.角色分类 ─ 按组合分类查看",
                 "• /pjsk.列表.展开指定角色 <角色名> ─ 查看特定角色详情",
+                "",
+                "🔧 会话控制：",
+                "• /pjsk.选择 <数字> ─ 在角色选择时输入数字",
+                "• /pjsk.输入文字 <内容> ─ 在文字输入时输入内容",
+                "• /pjsk.取消 ─ 取消当前会话",
+                "",
+                "💡 交互式制作流程：",
+                "1. 发送 /pjsk.列表.全部 查看角色网格",
+                "2. 输入数字 1-8 选择角色",
+                "3. 输入要添加的文字",
+                "4. 自动生成表情包",
                 "",
                 "例如：/pjsk.列表.展开指定角色 初音未来",
             ]
@@ -959,8 +1073,21 @@ class PjskEmojiMaker(Star):
 
     @filter.command("pjsk.列表.全部")
     async def list_all(self, event: AstrMessageEvent):
-        """PJSk 列表：显示所有角色。"""
-        yield event.plain_result(format_character_list())
+        """PJSk 列表：显示所有角色并开始交互式选择流程。"""
+        platform, user_id = self._get_platform_and_user(event)
+        
+        # Create interactive session
+        session = session_manager.create_session(
+            platform=platform,
+            user_id=user_id,
+            initial_state=SessionState.WAITING_CHARACTER_SELECTION,
+            timeout_seconds=30
+        )
+        
+        logger.debug(f"Created character selection session for {platform}:{user_id}")
+        
+        # Send character selection grid
+        yield self._send_character_selection_grid(event)
 
     @filter.command("pjsk.列表.角色分类")
     async def list_by_group(self, event: AstrMessageEvent):
@@ -989,6 +1116,110 @@ class PjskEmojiMaker(Star):
             return
         
         yield event.plain_result(format_character_detail(character_name))
+
+    @filter.command("pjsk.选择")
+    async def handle_character_selection(self, event: AstrMessageEvent):
+        """处理角色选择输入。"""
+        platform, user_id = self._get_platform_and_user(event)
+        raw_message = getattr(event, "message_str", "").strip()
+        
+        # Get existing session
+        session = session_manager.get_session(platform, user_id)
+        if not session:
+            yield event.plain_result("❌ 没有进行中的角色选择会话。请先发送 /pjsk.列表.全部 开始选择。")
+            return
+        
+        if session.state != SessionState.WAITING_CHARACTER_SELECTION:
+            yield event.plain_result("❌ 当前会话状态不正确。请先发送 /pjsk.列表.全部 开始选择。")
+            return
+        
+        # Validate character selection
+        selected_character = self._validate_character_selection(raw_message)
+        if not selected_character:
+            yield event.plain_result("❌ 输入无效。请输入 1-8 的数字选择角色。\n\n💡 提示：发送 /pjsk.列表.全部 重新查看角色列表")
+            return
+        
+        # Update session with selected character
+        session_manager.update_session(
+            platform=platform,
+            user_id=user_id,
+            state=SessionState.WAITING_TEXT_INPUT,
+            selected_character=selected_character,
+            timeout_seconds=60  # Extend timeout for text input
+        )
+        
+        logger.debug(f"User {platform}:{user_id} selected character: {selected_character}")
+        
+        # Prompt for text input
+        prompt_text = f"✅ 已选择「{selected_character}」，请输入要添加的文字：\n\n⏰ 60 秒内有效"
+        yield event.plain_result(prompt_text)
+
+    @filter.command("pjsk.输入文字")
+    async def handle_text_input(self, event: AstrMessageEvent):
+        """处理文字输入并生成表情包。"""
+        platform, user_id = self._get_platform_and_user(event)
+        raw_message = getattr(event, "message_str", "").strip()
+        
+        # Get existing session
+        session = session_manager.get_session(platform, user_id)
+        if not session:
+            yield event.plain_result("❌ 没有进行中的表情包制作会话。请先发送 /pjsk.列表.全部 开始选择。")
+            return
+        
+        if session.state != SessionState.WAITING_TEXT_INPUT:
+            yield event.plain_result("❌ 当前会话状态不正确。请先发送 /pjsk.列表.全部 开始选择。")
+            return
+        
+        if not raw_message:
+            yield event.plain_result("❌ 请输入要添加的文字。\n\n💡 提示：直接发送文字内容即可")
+            return
+        
+        # Validate text length
+        if len(raw_message) > self.MAX_TEXT_LENGTH:
+            yield event.plain_result(f"❌ 文字过长。最多支持 {self.MAX_TEXT_LENGTH} 个字符。")
+            return
+        
+        # Get selected character
+        selected_character = session.selected_character
+        if not selected_character:
+            yield event.plain_result("❌ 会话错误：未找到选中的角色。请重新开始。")
+            session_manager.cancel_session(platform, user_id)
+            return
+        
+        # Create state for rendering
+        state = RenderState(
+            text=raw_message,
+            font_size=self.DEFAULT_FONT_SIZE,
+            line_spacing=self.DEFAULT_LINE_SPACING,
+            curve_enabled=False,
+            offset_x=0,
+            offset_y=0,
+            role=selected_character,
+        )
+        
+        # Save state
+        key = self._state_key(event)
+        self._save_state(key, state)
+        
+        # Cancel session
+        session_manager.cancel_session(platform, user_id)
+        
+        logger.debug(f"User {platform}:{user_id} completed emoji creation: {selected_character} - {raw_message}")
+        
+        # Render and send result
+        headline = f"✨ 已生成「{selected_character}」表情包"
+        result = await self._render_and_respond(event, state, headline)
+        yield result
+
+    @filter.command("pjsk.取消")
+    async def cancel_session(self, event: AstrMessageEvent):
+        """取消当前进行中的会话。"""
+        platform, user_id = self._get_platform_and_user(event)
+        
+        if session_manager.cancel_session(platform, user_id):
+            yield event.plain_result("✅ 已取消当前会话。")
+        else:
+            yield event.plain_result("❌ 没有进行中的会话。")
 
     @filter.command("helloworld")
     async def helloworld(self, event: AstrMessageEvent):
