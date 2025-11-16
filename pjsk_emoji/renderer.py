@@ -184,6 +184,8 @@ class PJSKRenderer:
             'curve_transform': curve_transform,
             'text_shadow': text_shadow,
             'emoji_set': emoji_set,
+            'font_regular_path': self._get_asset_path('fonts/NotoSansCJK-Regular.ttc'),
+            'font_bold_path': self._get_asset_path('fonts/NotoSansCJK-Bold.ttc'),
             'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
         
@@ -234,6 +236,8 @@ class PJSKRenderer:
             'page_title': title,
             'page_subtitle': subtitle,
             'content_html': content_html,
+            'font_regular_path': self._get_asset_path('fonts/NotoSansCJK-Regular.ttc'),
+            'font_bold_path': self._get_asset_path('fonts/NotoSansCJK-Bold.ttc'),
             'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
         
